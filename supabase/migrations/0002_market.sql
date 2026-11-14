@@ -116,7 +116,7 @@ begin
     v_won := false;
     for v_bid in
       select user_id, amount from bids where listing_id = v_listing.id
-      order by amount desc, created_at asc, id asc
+      order by amount desc, seq asc
     loop
       select budget into v_budget from profiles where user_id = v_bid.user_id for update;
       if v_budget >= v_bid.amount
@@ -161,16 +161,13 @@ begin
 end;
 $$;
 
+-- See 0001: the API roles hold EXECUTE by default. close_cycle is for pg_cron and admin_close_market only.
 revoke execute on function place_bid(uuid, int), sell_player(uuid), admin_close_market(),
-  close_cycle(boolean, timestamptz) from public;
+  close_cycle(boolean, timestamptz) from public, anon, authenticated;
 grant execute on function place_bid(uuid, int), sell_player(uuid), admin_close_market() to authenticated;
+
 do $$
 begin
-  -- Supabase grants execute to anon by default; this role does not exist in a plain Postgres.
-  if exists (select 1 from pg_roles where rolname = 'anon') then
-    revoke execute on function place_bid(uuid, int), sell_player(uuid), admin_close_market(),
-      close_cycle(boolean, timestamptz) from anon;
-  end if;
   -- Madrid is UTC+1 or UTC+2, so 06:00 there is 04:00 or 05:00 UTC. Both fire; close_cycle only
   -- acts at 06:00 Madrid, once. Skipped where pg_cron is unavailable (tests); Task 11 checks cron.job.
   if exists (select 1 from pg_available_extensions where name = 'pg_cron') then

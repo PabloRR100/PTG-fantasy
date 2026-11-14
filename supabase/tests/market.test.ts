@@ -64,6 +64,18 @@ describe("close_cycle: resolving bids", () => {
     expect(await owner(second)).toBe(b);
   });
 
+  test("bids with the same timestamp go to the one placed first, not to the smaller id", async () => {
+    const [a, b] = [await manager("Equipo A"), await manager("Equipo B")];
+    const listing = await openListing();
+    const sameInstant = "2026-11-14T00:00:00Z";
+    const insert = (id: string, user: string) =>
+      db.query("insert into bids (id, listing_id, user_id, amount, created_at) values ($1, $2, $3, 1200000, $4)", [id, listing, user, sameInstant]);
+    await insert("ffffffff-ffff-4fff-8fff-ffffffffffff", a); // placed first, but sorts last by id
+    await insert("00000000-0000-4000-8000-000000000000", b);
+    await close();
+    expect(await owner(listing)).toBe(a);
+  });
+
   test("a winner who can no longer pay is skipped and the next bidder gets the player", async () => {
     const [a, b] = [await manager("Equipo A"), await manager("Equipo B")];
     const listing = await openListing();
@@ -232,5 +244,14 @@ describe("admin_close_market", () => {
   test("close_cycle itself is not callable by a signed-in user", async () => {
     const user = await manager("Normal");
     await expect(asUser(db, user, () => db.query("select close_cycle(true)"))).rejects.toThrow(/permission denied/);
+  });
+
+  test("a visitor with no session (anon) can call none of the game functions", async () => {
+    const calls = ["create_manager('x')", "set_lineup(array[]::uuid[])", "place_bid(gen_random_uuid(), 1)", "sell_player(gen_random_uuid())", "admin_close_market()", "close_cycle(true)"];
+    for (const call of calls) {
+      await db.exec("set role anon");
+      await expect(db.query(`select ${call}`), call).rejects.toThrow(/permission denied/);
+      await db.exec("reset role");
+    }
   });
 });

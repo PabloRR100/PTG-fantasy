@@ -5,15 +5,19 @@ import { fileURLToPath } from "node:url";
 
 const MIGRATIONS_DIR = fileURLToPath(new URL("../migrations/", import.meta.url));
 
-/** The slice of Supabase our SQL relies on: auth.users, auth.uid() and the authenticated role. */
+/** The slice of Supabase our SQL relies on: auth.users, auth.uid() and the API roles with their default grants. */
 const SUPABASE_STUBS = `
   create schema auth;
   create table auth.users (id uuid primary key);
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+  create role anon nologin;
   create role authenticated nologin;
-  grant usage on schema public, auth to authenticated;
-  alter default privileges in schema public grant all on tables to authenticated;
+  create role service_role nologin bypassrls;
+  grant usage on schema public, auth to anon, authenticated, service_role;
+  -- Supabase does this for every object a migration creates: the API roles can use it unless revoked.
+  alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 `;
 
 export const COLORS = ["Blanco", "Azul", "Verde", "Rosa"] as const;

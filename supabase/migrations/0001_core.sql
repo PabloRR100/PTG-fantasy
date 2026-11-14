@@ -71,9 +71,11 @@ create table bids (
   listing_id uuid not null references market_listings (id) on delete cascade,
   user_id uuid not null references profiles (user_id) on delete cascade,
   amount int not null check (amount > 0),
-  created_at timestamptz not null default clock_timestamp()
+  created_at timestamptz not null default clock_timestamp(),
+  -- "Earliest bid wins" ties are broken by this counter, never by the clock: two bids can share a timestamp.
+  seq bigint generated always as identity
 );
-create index bids_listing_idx on bids (listing_id, amount desc, created_at);
+create index bids_listing_idx on bids (listing_id, amount desc, seq);
 
 -- One row per closed 06:00 Madrid cycle; the primary key makes a second close a no-op.
 create table cycles (
@@ -186,12 +188,7 @@ begin
 end;
 $$;
 
-revoke execute on function create_manager(text), set_lineup(uuid[]) from public;
+-- Supabase gives anon and authenticated EXECUTE on every new function by default, so revoking from
+-- public is not enough: take it from the API roles explicitly, then grant back what signed-in users need.
+revoke execute on function create_manager(text), set_lineup(uuid[]) from public, anon, authenticated;
 grant execute on function create_manager(text), set_lineup(uuid[]) to authenticated;
-do $$
-begin
-  -- Supabase grants execute to anon by default; this role does not exist in a plain Postgres.
-  if exists (select 1 from pg_roles where rolname = 'anon') then
-    revoke execute on function create_manager(text), set_lineup(uuid[]) from anon;
-  end if;
-end $$;
