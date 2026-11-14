@@ -22,11 +22,15 @@ const SUPABASE_STUBS = `
 
 export const COLORS = ["Blanco", "Azul", "Verde", "Rosa"] as const;
 
-/** A throwaway Postgres with every migration applied, in file order. */
-export async function freshDb(): Promise<PGlite> {
+/**
+ * A throwaway Postgres with every migration applied, in file order.
+ * `stopBefore` ("0005") leaves out that migration and later ones, to test an upgrade from the previous state.
+ */
+export async function freshDb(options: { stopBefore?: string } = {}): Promise<PGlite> {
   const db = new PGlite();
   await db.exec(SUPABASE_STUBS);
-  for (const file of readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
+  const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+  for (const file of files.filter((f) => !options.stopBefore || f < options.stopBefore)) {
     await db.exec(readFileSync(`${MIGRATIONS_DIR}${file}`, "utf8"));
   }
   return db;
