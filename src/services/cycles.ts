@@ -1,15 +1,6 @@
-const TIME_ZONE = "Europe/Madrid";
-const CYCLE_START_HOUR = 6;
+import { madridParts } from "@/lib/madrid-time";
 
-const madridClock = new Intl.DateTimeFormat("en-GB", {
-  timeZone: TIME_ZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
+const CYCLE_START_HOUR = 6;
 
 /**
  * The cycle a timestamp belongs to, as the YYYY-MM-DD Madrid date of the 06:00 boundary
@@ -17,11 +8,7 @@ const madridClock = new Intl.DateTimeFormat("en-GB", {
  * into "the previous day", and DST needs no special case because we shift wall-clock fields.
  */
 export function cycleDateFor(instant: Date): string {
-  const parts = Object.fromEntries(
-    madridClock.formatToParts(instant).map((p) => [p.type, Number(p.value)]),
-  );
-  const shifted = new Date(
-    Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour - CYCLE_START_HOUR, parts.minute),
-  );
+  const w = madridParts(instant);
+  const shifted = new Date(Date.UTC(w.year, w.month - 1, w.day, w.hour - CYCLE_START_HOUR, w.minute));
   return shifted.toISOString().slice(0, 10);
 }
