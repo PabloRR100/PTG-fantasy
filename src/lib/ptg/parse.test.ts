@@ -102,6 +102,12 @@ describe("parseMatchPage", () => {
   test("reads the sets from pair A's point of view", () => {
     expect(match.sets).toEqual([{ a: 2, b: 6 }, { a: 6, b: 4 }, { a: 4, b: 6 }]);
   });
+  test("weekday names with accents (mié, sáb) are read", () => {
+    for (const weekday of ["mié", "sáb", "dom"]) {
+      const page = fixture("match-sample.html").replace("<span>lun</span>", `<span>${weekday}</span>`);
+      expect(parseMatchPage(page, MATCH_ID, NOW).playedAt).toBe("2026-11-09T19:00:00.000Z");
+    }
+  });
   test("a date later than now belongs to the previous year", () => {
     const early = parseMatchPage(fixture("match-sample.html"), MATCH_ID, new Date("2027-01-03T09:00:00Z"));
     expect(early.playedAt).toBe("2026-11-09T19:00:00.000Z");
@@ -126,6 +132,38 @@ describe("parseMatchPage", () => {
   test("a set value above 7 (tie-break?) fails loudly instead of scoring wrongly", () => {
     const tieBreak = fixture("match-sample.html").replace("<span>4</span><span>·</span><span>6</span>", "<span>10</span><span>·</span><span>6</span>");
     expect(() => parseMatchPage(tieBreak, MATCH_ID, NOW)).toThrow(/tie-break/);
+  });
+  test("each player rendered twice (streaming skeleton, then the real card) is one player", () => {
+    const skeleton = '<div><div><div><img/></div></div></div><template id="P:1"></template></a>';
+    const doubled = fixture("match-sample.html").replace(
+      /<li><a data-cta-id="match_to_player_profile" href="(\/perfil\/[^"]+)">/g,
+      `<li><a data-cta-id="match_to_player_profile" href="$1">${skeleton}<a data-cta-id="match_to_player_profile" href="$1">`,
+    );
+    const m = parseMatchPage(doubled, MATCH_ID, NOW);
+    expect([...m.pairA, ...m.pairB].map((p) => p.displayName)).toEqual(["Ana", "Beto", "Carla", "Dani"]);
+  });
+  test("a name streamed into a hidden segment is put back where React would move it", () => {
+    const card = /<div><div>Dani<\/div><div><span><span>Puesto en el grupo: <\/span>#6<\/span><\/div><\/div>/;
+    const html = fixture("match-sample.html");
+    const segment = card.exec(html)![0];
+    const streamed = html.replace(card, '<template id="P:1"></template>').replace("</main>", `<div hidden id="S:1">${segment}</div></main>`);
+    expect(parseMatchPage(streamed, MATCH_ID, NOW).pairB[1].displayName).toBe("Dani");
+  });
+  test("a player that only ever shows its skeleton fails loudly", () => {
+    const onlySkeletons = fixture("match-sample.html").replace(
+      /<div><div>(.*?)<\/div><div><span><span>Puesto en el grupo: <\/span>#\d+<\/span><\/div><\/div><\/a>/g,
+      '<template id="P:1"></template></a>',
+    );
+    expect(() => parseMatchPage(onlySkeletons, MATCH_ID, NOW)).toThrow(/streaming skeleton/);
+  });
+  test("a champion title next to the name is not part of the name and is not the viewer marker", () => {
+    const champion = fixture("match-sample.html").replace(">Dani<", ">Dani<span>, Campeón de Mas Blanco, 1.er semestre 2023</span><");
+    const dani = parseMatchPage(champion, MATCH_ID, NOW).pairB[1];
+    expect(dani).toMatchObject({ displayName: "Dani", isViewer: false });
+  });
+  test("the viewer who is also a champion is still recognised", () => {
+    const both = fixture("match-sample.html").replace("<span>·tú</span>", "<span>·tú</span><span>, Campeón de Mas Azul, 2022</span>");
+    expect(parseMatchPage(both, MATCH_ID, NOW).pairA[1]).toMatchObject({ displayName: "Beto", isViewer: true });
   });
   test("a page without four players fails with the count", () => {
     const three = fixture("match-sample.html").replace(/<li><a data-cta-id="match_to_player_profile" href="\/perfil\/44444444[^]*?<\/li>/, "");

@@ -84,7 +84,7 @@ returns date
 language plpgsql security definer set search_path = public as $$
 declare
   v_madrid timestamp := p_now at time zone 'Europe/Madrid';
-  v_cycle date := (v_madrid - interval '6 hours')::date; -- same rule as src/services/cycles.ts
+  v_cycle date := cycle_date_of(p_now);
   v_next_close timestamptz := ((v_cycle + 1)::timestamp + interval '6 hours') at time zone 'Europe/Madrid';
   v_rows int;
   v_listing record;

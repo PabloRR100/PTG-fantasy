@@ -4,6 +4,14 @@
 -- standings) and owner-only for private data (lineups, bids). There are NO insert/update/delete
 -- policies, so the only way to change ownership or money is through the security-definer functions.
 
+-- The one SQL definition of which cycle an instant belongs to: the Madrid date of the 06:00 boundary at
+-- or before it. src/services/cycles.ts says the same in TypeScript; supabase/tests/standings.test.ts
+-- fails if the two ever disagree.
+create function cycle_date_of(p_instant timestamptz) returns date
+language sql stable as $$
+  select ((p_instant at time zone 'Europe/Madrid') - interval '6 hours')::date
+$$;
+
 create table players (
   id uuid primary key default gen_random_uuid(),
   ptg_player_id uuid not null unique,
