@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "deps:install": "npm install --registry=https://registry.npmjs.org/",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "scrape": "scripts/scrape-ptg.sh",
+    "ingest": "tsx --env-file=.env scripts/ingest.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
