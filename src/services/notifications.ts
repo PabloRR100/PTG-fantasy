@@ -1,13 +1,13 @@
 import { extractEndpoint } from "@/lib/push-endpoint";
 import { formatMoney } from "@/lib/format";
 
-export type NotificationKind = "bid_won" | "bid_lost" | "market_open";
+export type NotificationKind = "bid_won" | "bid_lost" | "market_open" | "jornada_closed";
 
 /** A row of `notification_outbox`: something that happened and who should hear about it. */
 export type OutboxRow = { id: number; user_id: string; kind: NotificationKind; data: Record<string, unknown> };
 
-export type Prefs = { bids: boolean; market: boolean };
-export const DEFAULT_PREFS: Prefs = { bids: true, market: true };
+export type Prefs = { bids: boolean; market: boolean; jornada: boolean };
+export const DEFAULT_PREFS: Prefs = { bids: true, market: true, jornada: true };
 
 /** A browser's push subscription as the browser serializes it (`PushSubscription.toJSON()`). */
 export type PushSubscriptionData = { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -41,12 +41,28 @@ export function buildNotification(row: OutboxRow): Payload {
           : "Hay jugadores nuevos en subasta.";
       return { title: "Mercado abierto", body, url: "/mercado", tag: "padel-market-open" };
     }
+    case "jornada_closed": {
+      const week = text(row.data.week_start, "");
+      const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+      const [points, rank, teams, overall, delta] = [num(row.data.points), num(row.data.rank), num(row.data.teams), num(row.data.overall_rank), num(row.data.delta)];
+      const winner = text(row.data.winner, "");
+      const moved = delta === null || delta === 0 ? "" : delta > 0 ? ` (subes ${delta})` : ` (bajas ${-delta})`;
+      const mine = points === null || rank === null
+        ? "Ya están los resultados de la jornada."
+        : points === 0 ? "Esta jornada no sumaste puntos."
+        : `Has sumado ${points} pts: ${rank}º${teams ? ` de ${teams}` : ""}.`;
+      const table = overall === null ? "" : ` Ahora eres ${overall}º en la clasificación${moved}.`;
+      const top = winner && rank !== 1 ? ` Ganó ${winner}.` : "";
+      return { title: "Jornada cerrada", body: `${mine}${table}${top}`, url: week ? `/jornada?semana=${week}` : "/jornada", tag: `padel-jornada-${week || "last"}` };
+    }
   }
 }
 
-/** Bid results follow the bids switch; a new market follows the market switch. */
+/** Bid results follow the bids switch, a new market the market switch and a closed jornada the jornada switch. */
 export function prefAllows(kind: NotificationKind, prefs: Prefs): boolean {
-  return kind === "market_open" ? prefs.market : prefs.bids;
+  if (kind === "market_open") return prefs.market;
+  if (kind === "jornada_closed") return prefs.jornada;
+  return prefs.bids;
 }
 
 export function parseSubscription(subscription: unknown): PushSubscriptionData | null {

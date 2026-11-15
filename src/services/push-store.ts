@@ -20,11 +20,11 @@ export function createPushStore(db: SupabaseClient): DispatchStore {
       );
     },
     async prefs(userIds) {
-      const rows = unwrap<{ user_id: string; bids: boolean; market: boolean }[]>(
-        await db.from("notification_prefs").select("user_id, bids, market").in("user_id", userIds),
+      const rows = unwrap<{ user_id: string; bids: boolean; market: boolean; jornada: boolean }[]>(
+        await db.from("notification_prefs").select("user_id, bids, market, jornada").in("user_id", userIds),
         "load preferences",
       );
-      return new Map<string, Prefs>(rows.map((r) => [r.user_id, { ...DEFAULT_PREFS, bids: r.bids, market: r.market }]));
+      return new Map<string, Prefs>(rows.map((r) => [r.user_id, { ...DEFAULT_PREFS, bids: r.bids, market: r.market, jornada: r.jornada }]));
     },
     async finish(ids, state) {
       const { error } = await db.from("notification_outbox").update({ state, processed_at: new Date().toISOString() }).in("id", ids);

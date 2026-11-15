@@ -87,6 +87,10 @@ async function main() {
     skippedPlayers += result.skipped;
   }
   const unfinished = files.length - finished.length;
+  // Once the results are in, tell the managers how a finished jornada ended (a week is announced once; nothing otherwise).
+  const announced = await rpc("announce_closed_jornadas", {});
+  if (announced.error) throw new Error(`announce_closed_jornadas: ${announced.error.message}`);
+  console.log(`jornada notifications queued: ${announced.data}`);
   console.log(`matches: ${files.length - unfinished} ingested, ${unfinished} not finished; ${inserted} player results written, ${skippedPlayers} skipped (players not loaded into the game)`);
 }
 

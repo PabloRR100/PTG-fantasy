@@ -75,6 +75,10 @@ export function NotificationSettings({ initialPrefs }: { initialPrefs: Prefs }) 
           <input type="checkbox" checked={prefs.market} disabled={saving} onChange={(e) => change("market", e.target.checked)} />
           <span><strong>Mercado abierto</strong><small>Cada día, cuando hay jugadores nuevos en subasta.</small></span>
         </label>
+        <label className="switch-row">
+          <input type="checkbox" checked={prefs.jornada} disabled={saving} onChange={(e) => change("jornada", e.target.checked)} />
+          <span><strong>Jornada cerrada</strong><small>Cuando termina la semana: tus puntos y tu posición.</small></span>
+        </label>
       </section>
 
       {notice && <p role={notice.kind === "error" ? "alert" : "status"} className={`msg ${notice.kind === "error" ? "msg-error" : "msg-ok"}`}>{notice.text}</p>}
