@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { FREE, colorLabel, filterAndSort, ownerOptions, type DirectoryRow, type DirectoryView } from "@/services/player-directory";
 
 const row = (r: Pick<DirectoryRow, "id" | "name" | "color" | "value" | "owner"> & Partial<DirectoryRow>): DirectoryRow => ({
-  gender: "male", matches: 0, winRate: 0, called: 0, points: 0, average: null, trend: null, ...r,
+  gender: "male", clauseExtra: 0, matches: 0, winRate: 0, called: 0, points: 0, average: null, trend: null, ...r,
 });
 const rows: DirectoryRow[] = [
   row({ id: "1", name: "Kike", color: "Blanco", value: 2_000_000, owner: "Los Pepros", matches: 280, winRate: 0.55, called: 4, points: 40, average: 5 }),

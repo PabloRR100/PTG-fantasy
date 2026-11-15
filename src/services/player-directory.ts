@@ -22,6 +22,8 @@ export type DirectoryRow = {
   color: string;
   value: number;
   owner: string | null;
+  /** What the owner added on top of the clause floor (squads.clause_extra); 0 when free. */
+  clauseExtra: number;
   /** Matches played in PTG this semester (from PTG's ranking). */
   matches: number;
   /** PTG win ratio, 0 to 1. */

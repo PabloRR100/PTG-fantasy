@@ -28,7 +28,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
         Valor de la plantilla: {formatMoney(team.teamValue)} · {team.players.length} jugadores · <Link href={`/jornada?equipo=${team.user_id}`}>Ver sus puntos por jornada</Link>
       </p>
       <p className="lead">
-        Puedes llevarte a cualquiera pagando su cláusula, el doble de su valor. El dinero va a este equipo, que debe conservar al menos 2 jugadores de cada nivel. Tu saldo: {formatMoney(profile.budget)}.
+        Puedes llevarte a cualquiera pagando su cláusula, el doble de su valor más lo que su dueño haya blindado. El dinero va a este equipo, que debe conservar al menos 2 jugadores de cada nivel. Tu saldo: {formatMoney(profile.budget)}.
       </p>
       {team.players.length === 0 ? <p className="empty-feed">Este equipo no tiene jugadores.</p> : (
         <div className="table-wrap standings-wrap">
@@ -47,7 +47,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
                   <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.name}</td>
                   <td>{p.starter ? "Titular" : "Banquillo"}</td>
                   <td className="num">{formatMoney(p.value)}</td>
-                  <td><ClauseForm player={p.id} price={clausePrice(p.value)} name={p.name} budget={profile.budget} /></td>
+                  <td><ClauseForm player={p.id} price={clausePrice(p.value, p.clauseExtra)} name={p.name} budget={profile.budget} /></td>
                 </tr>
               ))}
             </tbody>

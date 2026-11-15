@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from "react";
 import {
-  closeMarket, createTeam, payReleaseClause, placeBid, saveLineup, sellPlayer, type ActionState,
+  closeMarket, createTeam, payReleaseClause, placeBid, setClauseExtra, saveLineup, sellPlayer, type ActionState,
 } from "@/app/actions";
 import { formatMoney } from "@/lib/format";
+import { CLAUSE_STEP, clausePrice, lockCost, maxExtra } from "@/services/clause";
 import { LEVELS, levelOf, lineupProblem, toggleStarter, type Color, type SquadPlayer } from "@/services/lineup";
 
 const NONE: ActionState = {};
@@ -117,6 +118,34 @@ export function ClauseForm({ player, price, name, budget }: { player: string; pr
       <input type="hidden" name="player" value={player} />
       <input type="hidden" name="price" value={price} />
       <button type="submit" disabled={pending}>{pending ? "Pagando…" : `Cláusula · ${formatMoney(price)}`}</button>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
+/**
+ * Edit how protected one of your players is: the clause is twice his value plus the extra you choose here. Raising the
+ * extra locks half of the increase from your budget; lowering it gives that half back. The preview says which.
+ */
+export function ClauseEditor({ player, value, extra, budget }: { player: string; value: number; extra: number; budget: number }) {
+  const [state, action, pending] = useActionState(setClauseExtra, NONE);
+  const [draft, setDraft] = useState(extra);
+  const top = maxExtra(value);
+  const cost = lockCost(extra, draft);
+  const tooExpensive = cost > budget;
+  return (
+    <form action={action} className="clause-editor">
+      <input type="hidden" name="player" value={player} />
+      <label className="visually-hidden" htmlFor={`extra-${player}`}>Cláusula extra en euros</label>
+      <input id={`extra-${player}`} name="extra" type="number" inputMode="numeric" min={0} max={top} step={CLAUSE_STEP} value={draft}
+        onChange={(e) => setDraft(Math.min(top, Math.max(0, Math.round(Number(e.target.value) / CLAUSE_STEP) * CLAUSE_STEP)))} />
+      <button type="submit" disabled={pending || draft === extra || tooExpensive}>Guardar</button>
+      <small className="hint">
+        Cláusula {formatMoney(clausePrice(value, draft))}
+        {cost > 0 && ` · bloquea ${formatMoney(cost)}`}
+        {cost < 0 && ` · te devuelve ${formatMoney(-cost)}`}
+        {tooExpensive && " · saldo insuficiente"}
+      </small>
       <Feedback state={state} />
     </form>
   );

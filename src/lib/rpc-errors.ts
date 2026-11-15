@@ -3,6 +3,7 @@ import { formatMoney } from "@/lib/format";
 const GENERIC = "No se pudo completar la acción. Inténtalo de nuevo.";
 
 const TRANSLATIONS: { pattern: RegExp; say: (m: RegExpMatchArray) => string }[] = [
+  { pattern: /^clause extra out of range \(maximum (\d+)\)/, say: (m) => `La cláusula extra debe ser un múltiplo de 10.000 € y no superar ${formatMoney(Number(m[1]))}.` },
   { pattern: /^clause unavailable/, say: () => "Ese jugador ya no está disponible en ese equipo." },
   { pattern: /^clause price changed/, say: () => "La cláusula ha cambiado. Actualiza la página para ver el precio." },
   { pattern: /^clause insufficient budget/, say: () => "No tienes saldo suficiente para pagar la cláusula." },

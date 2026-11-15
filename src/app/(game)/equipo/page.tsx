@@ -1,12 +1,13 @@
-import { LineupForm, SellButton } from "@/components/forms";
+import { ClauseEditor, LineupForm, SellButton } from "@/components/forms";
 import { formatMoney } from "@/lib/format";
+import { clausePrice } from "@/services/clause";
 import { requireManager } from "@/lib/session";
 import { LEVELS, levelOf } from "@/services/lineup";
 import { getSquad } from "@/services/game-data";
 import { squadValue } from "@/services/team-value";
 
 export default async function EquipoPage() {
-  const { db, userId } = await requireManager();
+  const { db, userId, profile } = await requireManager();
   const squad = await getSquad(db, userId);
   const perLevel = (color: string) => squad.filter((p) => levelOf(p.color) === levelOf(color)).length;
   const cycleTotal = squad.filter((p) => p.starter).reduce((sum, p) => sum + p.cyclePoints, 0);
@@ -36,6 +37,28 @@ export default async function EquipoPage() {
         ))}
         {LEVELS.every((l) => perLevel(l.colors[0]) <= 2) && <li>No puedes vender a nadie: ya tienes el mínimo en cada nivel.</li>}
       </ul>
+
+      <h2>Cláusulas</h2>
+      <p className="lead">
+        Cualquier rival puede llevarse a uno de tus jugadores pagando su cláusula: el doble de su valor más lo que añadas aquí, y ese dinero es para ti.
+        Subir la cláusula bloquea la mitad del aumento de tu presupuesto; al bajarla, te devuelve esa mitad. Máximo: el cuádruple del valor.
+        Si vendes un jugador al mercado, lo bloqueado en él no se devuelve: bájala antes. Tu saldo: <strong>{formatMoney(profile.budget)}</strong>.
+      </p>
+      <div className="table-wrap standings-wrap">
+        <table className="standings">
+          <thead><tr><th>Jugador</th><th className="num">Valor</th><th className="num">Cláusula</th><th>Blindaje</th></tr></thead>
+          <tbody>
+            {[...squad].sort((a, b) => b.value - a.value).map((p) => (
+              <tr key={p.id}>
+                <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.display_name}</td>
+                <td className="num">{formatMoney(p.value)}</td>
+                <td className="num">{formatMoney(clausePrice(p.value, p.clauseExtra))}</td>
+                <td><ClauseEditor player={p.id} value={p.value} extra={p.clauseExtra} budget={profile.budget} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
