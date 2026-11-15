@@ -100,25 +100,42 @@ export function teamJornada(input: {
   return { players: list, counted: list.reduce((s, p) => s + p.counted, 0), missed: list.reduce((s, p) => s + p.missed, 0) };
 }
 
-/** A closed jornada as a Tablón card: the podium, dated when the week ended (Monday 06:00 Madrid). */
-export type JornadaFeedRow = {
-  kind: "jornada";
-  id: string;
-  weekStart: string;
-  created_at: string;
-  podium: { user_id: string; team: string; avatar_url: string | null; points: number; rank: number }[];
+/** One team in a closed jornada's Tablón card. */
+export type JornadaEntry = {
+  user_id: string; team: string; avatar_url: string | null;
+  /** Points of the week and the rank among teams for that week. */
+  points: number; rank: number;
+  /** Position in the overall table once the week is in, and how many places it moved (positive = climbed). */
+  overallRank: number; delta: number;
 };
+
+/** A closed jornada as a Tablón card, dated when the week ended (Monday 06:00 Madrid), as Betcomm's matchday summary. */
+export type JornadaFeedRow = { kind: "jornada"; id: string; weekStart: string; created_at: string; entries: JornadaEntry[] };
+
+/** Overall rank of every team counting only weeks up to and including `lastWeek` (equal totals share a rank). */
+function overallRanks(teams: TeamRow[], rows: CyclePointsRow[], lastWeek: string | null): Map<string, number> {
+  const totals = teams.map((t) => ({ id: t.user_id, name: t.team_name, total: rows.filter((r) => r.user_id === t.user_id && lastWeek !== null && weekStartFor(r.cycle_date) <= lastWeek).reduce((s, r) => s + r.points, 0) }));
+  totals.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "es"));
+  return new Map(totals.map((t) => [t.id, totals.findIndex((x) => x.total === t.total) + 1]));
+}
 
 export function jornadaFeedRows(
   teams: TeamRow[], rows: CyclePointsRow[], currentCycleDate: string, endOfWeek: (weekStart: string) => Date, limit = 6,
 ): JornadaFeedRow[] {
   const current = weekStartFor(currentCycleDate);
-  const closed = [...new Set(rows.map((r) => weekStartFor(r.cycle_date)))].filter((w) => w < current).sort().reverse().slice(0, limit);
+  const allWeeks = [...new Set(rows.map((r) => weekStartFor(r.cycle_date)))].sort();
+  const closed = allWeeks.filter((w) => w < current).reverse().slice(0, limit);
   return closed.flatMap((weekStart) => {
     const ranked = weekRanking(teams, rows, weekStart);
     if (ranked.every((r) => r.points === 0)) return [];
-    const podium = ranked.filter((r) => r.rank <= 3 && r.points > 0).map((r) => ({ user_id: r.user_id, team: r.team_name, avatar_url: r.avatar_url ?? null, points: r.points, rank: r.rank }));
-    return [{ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at: endOfWeek(weekStart).toISOString(), podium }];
+    const before = allWeeks.filter((w) => w < weekStart).pop() ?? null;
+    const now = overallRanks(teams, rows, weekStart);
+    const was = overallRanks(teams, rows, before);
+    const entries = ranked.map((r) => ({
+      user_id: r.user_id, team: r.team_name, avatar_url: r.avatar_url ?? null, points: r.points, rank: r.rank,
+      overallRank: now.get(r.user_id) ?? 0, delta: before === null ? 0 : (was.get(r.user_id) ?? 0) - (now.get(r.user_id) ?? 0),
+    }));
+    return [{ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at: endOfWeek(weekStart).toISOString(), entries }];
   });
 }
 

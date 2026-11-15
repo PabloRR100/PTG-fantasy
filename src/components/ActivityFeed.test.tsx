@@ -20,14 +20,28 @@ afterEach(() => { act(() => root.unmount()); host.remove(); });
 const render = (node: React.ReactNode) => act(() => root.render(node));
 
 describe("ActivityFeed jornada card", () => {
-  test("shows a closed jornada's podium among the day's events, linking to its page", () => {
-    const jornada = { kind: "jornada" as const, id: "jornada-2026-11-09", weekStart: "2026-11-09", created_at: "2026-11-16T04:00:00Z", podium: [
-      { user_id: "a", team: "Alfa", avatar_url: null, points: 40, rank: 1 }, { user_id: "b", team: "Beta", avatar_url: null, points: 31, rank: 2 }] };
-    render(<ActivityFeed now={new Date("2026-11-16T12:00:00Z")} rows={[row({ id: 1, kind: "signed", created_at: "2026-11-15T09:00:00Z" })]} jornadas={[jornada]} />);
-    expect(host.querySelector(".feed-card-jornada")?.textContent).toContain("Jornada cerrada · 9 – 15 nov");
-    expect(Array.from(host.querySelectorAll(".podium li")).map((li) => li.textContent)).toEqual(["1AAlfa40 pts", "2BBeta31 pts"]);
-    expect(host.querySelector(".feed-card-jornada a")?.getAttribute("href")).toBe("/jornada?semana=2026-11-09");
+  const e = (user_id: string, team: string, points: number, rank: number, overallRank: number, delta: number) => ({ user_id, team, avatar_url: null, points, rank, overallRank, delta });
+  const jornada = (weekStart: string, created_at: string) => ({ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at, entries: [
+    e("a", "Alfa", 40, 1, 2, -1), e("b", "Beta", 31, 2, 1, 1), e("c", "Gama", 20, 3, 3, 0), e("d", "Delta", 0, 4, 4, 0)] });
+
+  test("the newest jornada opens with the whole table, each row with points, overall rank and movement", () => {
+    render(<ActivityFeed now={new Date("2026-11-16T12:00:00Z")} rows={[row({ id: 1, kind: "signed", created_at: "2026-11-15T09:00:00Z" })]} jornadas={[jornada("2026-11-09", "2026-11-16T04:00:00Z")]} />);
+    const card = host.querySelector(".feed-card-jornada")!;
+    expect(card.textContent).toContain("Jornada 9 – 15 nov");
+    expect(Array.from(card.querySelectorAll(".podium li")).map((li) => li.textContent)).toEqual([
+      "1AAlfa40 pts#2↓1", "2BBeta31 pts#1↑1", "3GGama20 pts#3–", "4DDelta" + "N/P#4–"]);
+    expect(card.querySelector("a")?.getAttribute("href")).toBe("/jornada?semana=2026-11-09");
     expect(host.querySelectorAll(".feed-card")).toHaveLength(2);
+  });
+
+  test("an older jornada shows only the podium until tapped", () => {
+    render(<ActivityFeed now={new Date("2026-11-23T12:00:00Z")} rows={[]} jornadas={[jornada("2026-11-16", "2026-11-23T04:00:00Z"), jornada("2026-11-09", "2026-11-16T04:00:00Z")]} />);
+    const [newest, older] = Array.from(host.querySelectorAll(".feed-card-jornada"));
+    expect(newest.querySelectorAll(".podium li")).toHaveLength(4);
+    expect(older.querySelectorAll(".podium li")).toHaveLength(3);
+    expect(older.textContent).toContain("+1 más");
+    act(() => (older.querySelector(".jornada-head") as HTMLButtonElement).click());
+    expect(older.querySelectorAll(".podium li")).toHaveLength(4);
   });
 });
 
