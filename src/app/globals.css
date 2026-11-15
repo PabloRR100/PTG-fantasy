@@ -308,7 +308,8 @@ td.trend { text-align: center; font-family: var(--label); font-weight: 700; }
 .week-nav span { opacity: .3; }
 a.team-cell { text-decoration: none; color: inherit; }
 a.team-cell[aria-current="true"] .team-name { font-weight: 700; }
-td.missed { color: var(--muted, #6b6b5f); }
+tr.bench-row td { background: rgba(0, 0, 0, .05); color: var(--muted, #6b6b5f); font-style: italic; }
+.bench-tag { font-size: .75rem; }
 tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
 .podium { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
 .podium li { display: flex; align-items: center; gap: 8px; }
