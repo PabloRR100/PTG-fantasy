@@ -226,11 +226,26 @@ export async function getTeamJornada(db: SupabaseClient, teamUserId: string, wee
   return teamJornada({ weekStart, snapshots, squadIds: squad.map((s) => s.player_id), matches, results, players });
 }
 
-export type RivalPlayer = { id: string; name: string; color: string; value: number };
+export type TeamPlayer = { id: string; name: string; color: string; value: number; starter: boolean };
+export type TeamView = { user_id: string; team_name: string; avatar_url: string | null; players: TeamPlayer[]; teamValue: number; lineupDate: string | null };
 
-/** A team's whole squad, for the clause table. Squads and players are readable by every signed-in user (RLS). */
-export async function getTeamSquad(db: SupabaseClient, teamUserId: string): Promise<RivalPlayer[]> {
-  const squad = unwrap<{ player_id: string }[]>(await db.from("squads").select("player_id").eq("user_id", teamUserId), "load team squad");
-  const players = await getPlayers(db, squad.map((s) => s.player_id));
-  return players.map((p) => ({ id: p.id, name: p.display_name, color: p.color, value: p.value })).sort((a, b) => b.value - a.value);
+/**
+ * Another team as everyone can see it: its squad, with "starter" taken from its latest lineup snapshot (the 06:00 lineup
+ * that scores today). A team's live lineup is private (RLS), but the snapshots are public, so that is what we can show.
+ */
+export async function getTeamView(db: SupabaseClient, teamUserId: string): Promise<TeamView | null> {
+  const team = unwrap<TeamRow | null>(await db.from("profiles").select("user_id, team_name, avatar_url").eq("user_id", teamUserId).maybeSingle(), "load team");
+  if (!team) return null;
+  const [squad, latest] = await Promise.all([
+    unwrap<{ player_id: string }[]>(await db.from("squads").select("player_id").eq("user_id", teamUserId), "load team squad"),
+    unwrap<{ cycle_date: string }[]>(await db.from("lineup_snapshots").select("cycle_date").eq("user_id", teamUserId).order("cycle_date", { ascending: false }).limit(1), "load latest lineup"),
+  ]);
+  const lineupDate = latest[0]?.cycle_date ?? null;
+  const starters = lineupDate === null ? [] : unwrap<{ player_id: string }[]>(
+    await db.from("lineup_snapshots").select("player_id").eq("user_id", teamUserId).eq("cycle_date", lineupDate), "load starters");
+  const starterIds = new Set(starters.map((s) => s.player_id));
+  const players = (await getPlayers(db, squad.map((s) => s.player_id)))
+    .map((p) => ({ id: p.id, name: p.display_name, color: p.color, value: p.value, starter: starterIds.has(p.id) }))
+    .sort((a, b) => Number(b.starter) - Number(a.starter) || b.value - a.value);
+  return { ...team, avatar_url: team.avatar_url ?? null, players, teamValue: players.reduce((sum, p) => sum + p.value, 0), lineupDate };
 }
