@@ -33,7 +33,7 @@ describe("dispatchPending", () => {
 
   test("a manager with no device or with the kind switched off is skipped, and nothing is sent", async () => {
     const log: string[] = [];
-    const t = fakeStore([row(1, "nobody"), row(2, "u1")], [sub("u1", "https://push/1")], { u1: { bids: true, market: false } });
+    const t = fakeStore([row(1, "nobody"), row(2, "u1")], [sub("u1", "https://push/1")], { u1: { bids: true, market: false, jornada: true } });
     const report = await dispatchPending(t.store, okSender(log));
     expect(log).toEqual([]);
     expect([t.finished.get(1), t.finished.get(2)]).toEqual(["skipped", "skipped"]);

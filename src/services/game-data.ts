@@ -176,11 +176,11 @@ export async function getUnreadCount(db: SupabaseClient, userId: string): Promis
 
 /** What this manager wants to be told about. No stored row means everything on. */
 export async function getNotificationPrefs(db: SupabaseClient, userId: string): Promise<Prefs> {
-  const row = unwrap<{ bids: boolean; market: boolean } | null>(
-    await db.from("notification_prefs").select("bids, market").eq("user_id", userId).maybeSingle(),
+  const row = unwrap<{ bids: boolean; market: boolean; jornada: boolean } | null>(
+    await db.from("notification_prefs").select("bids, market, jornada").eq("user_id", userId).maybeSingle(),
     "load notification preferences",
   );
-  return row ? { bids: row.bids, market: row.market } : DEFAULT_PREFS;
+  return row ? { bids: row.bids, market: row.market, jornada: row.jornada } : DEFAULT_PREFS;
 }
 
 /** The Tablón's jornada cards: the running week and the last finished ones, from the same points the standings use. */

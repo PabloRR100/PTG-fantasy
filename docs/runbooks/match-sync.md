@@ -26,3 +26,10 @@ Prompt to give the task (daily at 09:00 Madrid is a good time: after the 06:00 c
 > Run the match sync from docs/runbooks/match-sync.md in the PTG-fantasy repo: scrape with MATCHES_ONLY=1 using the open
 > logged-in tab, run the ingest as a dry run, and only if it reports finished matches and no errors run it again with
 > --apply. Report the counts. If the tab is logged out or any step fails, stop and say which one. Do not touch players or colors.
+
+## Closed-jornada notifications
+
+`npm run ingest -- --apply` ends by calling `announce_closed_jornadas()`. The first import after a Monday-to-Sunday week
+has ended (so, the Monday run) queues one `jornada_closed` notification per team (push + Buzón); a week is announced once,
+older unannounced weeks are only marked. It runs from the import, not from `close_cycle`, because at 06:00 the weekend's
+matches are not in yet. If the Monday import is skipped, the notification waits for the next one.

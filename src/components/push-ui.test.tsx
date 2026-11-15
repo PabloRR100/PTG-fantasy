@@ -109,7 +109,7 @@ describe("PushReminderBanner", () => {
 });
 
 describe("NotificationSettings", () => {
-  const prefs = { bids: true, market: true };
+  const prefs = { bids: true, market: true, jornada: true };
 
   test("a device that can push but has not subscribed offers to switch on", async () => {
     await render(<NotificationSettings initialPrefs={prefs} />);
@@ -167,7 +167,7 @@ describe("NotificationSettings", () => {
     await render(<NotificationSettings initialPrefs={prefs} />);
     const box = host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[0];
     await click(box);
-    expect(savePrefs).toHaveBeenCalledWith({ bids: false, market: true });
+    expect(savePrefs).toHaveBeenCalledWith({ bids: false, market: true, jornada: true });
     expect(host.textContent).toContain("Preferencias guardadas.");
     expect(box.checked).toBe(false);
   });

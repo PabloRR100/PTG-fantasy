@@ -71,14 +71,14 @@ export async function signOut(): Promise<void> {
 }
 
 export async function saveNotificationPrefs(prefs: Prefs): Promise<ActionState> {
-  if (typeof prefs?.bids !== "boolean" || typeof prefs?.market !== "boolean") return { error: "Preferencias no válidas." };
+  if (typeof prefs?.bids !== "boolean" || typeof prefs?.market !== "boolean" || typeof prefs?.jornada !== "boolean") return { error: "Preferencias no válidas." };
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) return { error: "Tu sesión ha caducado. Vuelve a entrar." };
   const { error } = await supabase
     .from("notification_prefs")
-    .upsert({ user_id: userId, bids: prefs.bids, market: prefs.market, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    .upsert({ user_id: userId, bids: prefs.bids, market: prefs.market, jornada: prefs.jornada, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   if (error) {
     console.error(`saveNotificationPrefs failed: ${error.message}`);
     return { error: "No se pudieron guardar las preferencias. Inténtalo de nuevo." };
