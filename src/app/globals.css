@@ -51,27 +51,21 @@ a { color: var(--court); }
 .rules table { max-width: 420px; margin-bottom: 8px; }
 
 /* Header: court green, avatar on the left, brand mark and wordmark, tabs below on narrow screens. */
-.topbar { background: var(--court); color: var(--paper-light); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; }
+.topbar { background: var(--court); color: var(--paper-light); display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px 12px; padding: 8px 12px 0; }
 .avatar-button { all: unset; cursor: pointer; border-radius: 999px; display: inline-flex; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 999px; background: var(--ball); color: var(--ink); font-family: var(--display); font-weight: 800; border: 2px solid var(--ball); flex: none; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar-xs { width: 28px; height: 28px; font-size: .7rem; border-width: 1px; }
 .avatar-sm { width: 44px; height: 44px; font-size: 1rem; }
 .avatar-lg { width: 56px; height: 56px; font-size: 1.25rem; }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.brand-logo { border-radius: 10px; height: 40px; width: 40px; }
+.brand { text-align: center; min-width: 0; }
 .brand-title { display: block; font-family: var(--display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; }
 .budget { display: block; font-family: var(--label); font-size: .9rem; letter-spacing: .02em; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nav { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
-.nav a { color: var(--paper-light); text-decoration: none; padding: 7px 14px; border-radius: 999px; font-weight: 600; font-size: .92rem; border: 1px solid transparent; }
-.nav a:hover { border-color: rgb(251 249 244 / .45); }
-.nav a[aria-current="page"] { background: var(--ball); color: var(--ink); }
-@media (max-width: 720px) {
-  .nav { flex-basis: 100%; margin-left: 0; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
-  .nav a { white-space: nowrap; }
-}
+.nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 2px; overflow-x: auto; margin: 0 -12px; padding: 0 8px; }
+.nav a { flex: 1 1 auto; text-align: center; white-space: nowrap; color: var(--paper-light); opacity: .8; text-decoration: none; padding: 10px 10px 9px; font-weight: 600; font-size: .92rem; border-bottom: 3px solid transparent; }
+.nav a:hover { opacity: 1; }
+.nav a[aria-current="page"] { opacity: 1; border-bottom-color: var(--ball); }
 
-/* Side menu: enters from the left, as in Betcomm's SidebarDrawer. */
 .drawer-overlay { position: fixed; inset: 0; background: rgb(14 22 24 / .55); opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility 0s linear .25s; z-index: 100; }
 .drawer-overlay.is-open { opacity: 1; visibility: visible; transition-delay: 0s; }
 .drawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(86vw, 320px); background: var(--paper-light); color: var(--ink); z-index: 101; display: flex; flex-direction: column; transform: translateX(-100%); visibility: hidden; transition: transform .28s ease, visibility 0s linear .28s; box-shadow: 8px 0 32px rgb(14 22 24 / .25); }
@@ -273,7 +267,6 @@ table.standings td.num { white-space: nowrap; }
 .feed-meta { display: flex; gap: 10px; align-items: center; margin-top: 4px; color: var(--ash); font-family: var(--label); font-size: .85rem; }
 .empty-feed { color: var(--ash); padding: 18px 4px; }
 .bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--paper-light); text-decoration: none; flex: none; }
-@media (max-width: 720px) { .bell { order: 1; margin-left: auto; } .nav { order: 2; } }
 .icon { display: block; flex: none; }
 .bell-badge { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--error); color: #fff; font: 700 .72rem/18px var(--label); text-align: center; }
 
