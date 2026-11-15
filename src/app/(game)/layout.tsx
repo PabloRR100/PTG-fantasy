@@ -1,5 +1,6 @@
 import { GameHeader } from "@/components/GameHeader";
 import { InstallBanner } from "@/components/InstallBanner";
+import { UpdateBanner } from "@/components/UpdateBanner";
 import { PushReminderBanner } from "@/components/PushReminderBanner";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { formatMoney } from "@/lib/format";
@@ -15,6 +16,7 @@ export default async function GameLayout({ children }: { children: React.ReactNo
       <GameHeader teamName={profile.team_name} budget={formatMoney(profile.budget)} avatarUrl={avatarUrl} isAdmin={profile.is_admin} unread={unread} />
       <ServiceWorkerRegistrar />
       <main className="page">
+        <UpdateBanner />
         <InstallBanner />
         <PushReminderBanner />
         {children}

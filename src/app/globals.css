@@ -328,3 +328,4 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
 .team-title { display: flex; align-items: center; gap: 12px; }
 .clause-editor { display: grid; grid-template-columns: minmax(6rem, 9rem) auto; gap: 4px 8px; align-items: center; }
 .clause-editor small, .clause-editor .msg { grid-column: 1 / -1; }
+.update-banner { border-left-color: var(--court); position: sticky; top: 8px; z-index: 50; box-shadow: 0 6px 20px rgb(14 22 24 / .18); }
