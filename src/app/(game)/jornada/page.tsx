@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { requireManager } from "@/lib/session";
-import { ClauseForm } from "@/components/forms";
-import { clausePrice } from "@/services/clause";
-import { formatMoney } from "@/lib/format";
-import { getJornada, getTeamJornada, getTeamSquad } from "@/services/game-data";
+import { getJornada, getTeamJornada } from "@/services/game-data";
 import { jornadaLabel, jornadaRows, nextWeek, previousWeek } from "@/services/jornada";
 
 export const metadata = { title: "Jornada · Padel Fantasy" };
@@ -13,12 +10,11 @@ const href = (week: string, team: string) => `/jornada?semana=${week}&equipo=${t
 
 export default async function JornadaPage({ searchParams }: { searchParams: Promise<{ semana?: string; equipo?: string }> }) {
   const { semana, equipo } = await searchParams;
-  const { db, userId, profile } = await requireManager();
+  const { db, userId } = await requireManager();
   const view = await getJornada(db, semana ?? null);
   const teamId = view.ranking.some((r) => r.user_id === equipo) ? (equipo as string) : userId;
   const team = view.ranking.find((r) => r.user_id === teamId);
   const detail = await getTeamJornada(db, teamId, view.weekStart);
-  const rivalSquad = teamId === userId ? [] : await getTeamSquad(db, teamId);
   const older = view.weeks.includes(previousWeek(view.weekStart)) ? previousWeek(view.weekStart) : null;
   const newer = view.weeks.includes(nextWeek(view.weekStart)) ? nextWeek(view.weekStart) : null;
 
@@ -74,25 +70,8 @@ export default async function JornadaPage({ searchParams }: { searchParams: Prom
           </table>
         </div>
       )}
-      {rivalSquad.length > 0 && (
-        <>
-          <h2>Plantilla de {team?.team_name}</h2>
-          <p className="lead">Puedes llevarte a cualquiera pagando su cláusula, el doble de su valor de mercado. El dinero va a ese equipo, que debe conservar al menos 2 jugadores de cada nivel. Tu saldo: {formatMoney(profile.budget)}.</p>
-          <div className="table-wrap standings-wrap">
-            <table className="standings">
-              <thead><tr><th>Jugador</th><th className="num">Valor</th><th>Cláusula</th></tr></thead>
-              <tbody>
-                {rivalSquad.map((p) => (
-                  <tr key={p.id}>
-                    <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.name}</td>
-                    <td className="num">{formatMoney(p.value)}</td>
-                    <td><ClauseForm player={p.id} price={clausePrice(p.value)} name={p.name} budget={profile.budget} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+      {teamId !== userId && (
+        <p className="lead"><Link href={`/equipos/${teamId}`}>Ver su plantilla y pagar cláusulas</Link></p>
       )}
       <p className="lead">Las filas sombreadas son jugadores de su plantilla actual que puntuaron en días en que no eran titulares: no suman al equipo.</p>
     </>

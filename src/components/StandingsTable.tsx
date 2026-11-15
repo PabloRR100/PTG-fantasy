@@ -22,7 +22,7 @@ export function StandingsTable({ rows, myUserId }: { rows: StandingRow[]; myUser
             <tr key={row.user_id} className={row.user_id === myUserId ? "me" : undefined}>
               <td>{row.rank}</td>
               <td>
-                <Link className="team-cell" href={`/jornada?equipo=${row.user_id}`} title="Ver su jornada">
+                <Link className="team-cell" href={row.user_id === myUserId ? "/equipo" : `/equipos/${row.user_id}`} title="Ver su equipo">
                   <Avatar url={row.avatar_url} name={row.team_name} size="xs" />
                   <span className="team-name">{row.team_name}</span>
                 </Link>
