@@ -60,6 +60,15 @@ export async function payReleaseClause(_prev: ActionState, form: FormData): Prom
   return { ok: "Cláusula pagada. El jugador ya está en tu equipo." };
 }
 
+export async function setClauseExtra(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const extra = Number(form.get("extra"));
+  if (!Number.isSafeInteger(extra) || extra < 0) return { error: "Escribe una cantidad válida en euros." };
+  const error = await callRpc("set_clause_extra", { p_player: String(form.get("player") ?? ""), p_extra: extra });
+  if (error) return { error };
+  revalidatePath("/", "layout");
+  return { ok: "Cláusula actualizada." };
+}
+
 export async function closeMarket(): Promise<ActionState> {
   const error = await callRpc("admin_close_market", {});
   if (error) return { error };

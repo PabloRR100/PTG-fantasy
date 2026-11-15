@@ -71,3 +71,47 @@ describe("pay_release_clause", () => {
     await expect(db.query("select pay_release_clause($1, $2)", [target.id, clausePrice(target.value)])).rejects.toThrow(/not signed in/);
   });
 });
+
+describe("set_clause_extra (clause protection)", () => {
+  const budgetOf = async (user: string) => (await q<{ budget: number }>("select budget from profiles where user_id = $1", [user]))[0].budget;
+  const set = (user: string, player: string, extra: number) => asUser(db, user, () => db.query("select set_clause_extra($1, $2)", [player, extra]));
+  const extraOf = async (player: string) => (await q<{ clause_extra: number }>("select clause_extra from squads where player_id = $1", [player]))[0].clause_extra;
+
+  test("raising locks half the increase, lowering returns half of the decrease", async () => {
+    const owner = await team("Dueño");
+    const p = (await squadOf(owner))[0];
+    const b0 = await budgetOf(owner);
+    await set(owner, p.id, 400_000);
+    expect(await budgetOf(owner)).toBe(b0 - 200_000);
+    expect(await extraOf(p.id)).toBe(400_000);
+    await set(owner, p.id, 100_000);
+    expect(await budgetOf(owner)).toBe(b0 - 50_000);
+    await set(owner, p.id, 0);
+    expect(await budgetOf(owner)).toBe(b0); // fully reversible
+  });
+
+  test("a rival pays floor plus extra, the owner keeps all of it, and the new owner starts from the floor", async () => {
+    const [buyer, seller] = [await team("Comprador"), await team("Vendedor")];
+    const p = (await squadOf(seller)).find((x) => x.starter)!;
+    await set(seller, p.id, 200_000);
+    const price = clausePrice(p.value, 200_000);
+    await expect(pay(buyer, p.id, clausePrice(p.value))).rejects.toThrow(/clause price changed/); // stale price
+    const s0 = (await q<{ budget: number }>("select budget from profiles where user_id = $1", [seller]))[0].budget;
+    await pay(buyer, p.id, price);
+    expect((await q<{ budget: number }>("select budget from profiles where user_id = $1", [seller]))[0].budget).toBe(s0 + price);
+    expect(await extraOf(p.id)).toBe(0);
+  });
+
+  test("refuses a player that is not yours, a step that is not 10,000, a value above the cap and a missing balance", async () => {
+    const [owner, other] = [await team("Dueño"), await team("Otro")];
+    const mine = (await squadOf(owner))[0];
+    const theirs = (await squadOf(other))[0];
+    await expect(set(owner, theirs.id, 10_000)).rejects.toThrow(/not in your squad/);
+    await expect(set(owner, mine.id, 15_000)).rejects.toThrow(/out of range/);
+    await expect(set(owner, mine.id, mine.value * 2 + 10_000)).rejects.toThrow(/out of range/);
+    await db.query("update profiles set budget = 1000 where user_id = $1", [owner]);
+    await expect(set(owner, mine.id, 100_000)).rejects.toThrow(/clause insufficient budget/);
+    expect(await extraOf(mine.id)).toBe(0);
+  });
+});
+

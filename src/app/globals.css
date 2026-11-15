@@ -326,3 +326,5 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
 .clause-form { display: grid; gap: 4px; justify-items: start; }
 .clause-form button { white-space: nowrap; }
 .team-title { display: flex; align-items: center; gap: 12px; }
+.clause-editor { display: grid; grid-template-columns: minmax(6rem, 9rem) auto; gap: 4px 8px; align-items: center; }
+.clause-editor small, .clause-editor .msg { grid-column: 1 / -1; }

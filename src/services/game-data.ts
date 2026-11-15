@@ -16,7 +16,7 @@ import { buildPlayerStats, type MatchRow, type ResultRow, type SnapshotRow } fro
 
 export type Profile = { user_id: string; team_name: string; budget: number; is_admin: boolean; avatar_url: string | null };
 export type PlayerRow = { id: string; display_name: string; color: Color; value: number; matches_played: number; ratio: number };
-export type SquadEntry = PlayerRow & { starter: boolean; cyclePoints: number };
+export type SquadEntry = PlayerRow & { starter: boolean; cyclePoints: number; clauseExtra: number };
 export type Listing = { id: string; closes_at: string; player: PlayerRow; myBid: number | null };
 export type MyBid = { listingId: string; playerName: string; color: Color; amount: number };
 
@@ -56,13 +56,14 @@ async function pointsThisCycle(db: SupabaseClient, playerIds: string[], now: Dat
 }
 
 export async function getSquad(db: SupabaseClient, userId: string, now = new Date()): Promise<SquadEntry[]> {
-  const squad = unwrap<{ player_id: string }[]>(await db.from("squads").select("player_id").eq("user_id", userId), "load squad");
+  const squad = unwrap<{ player_id: string; clause_extra: number }[]>(await db.from("squads").select("player_id, clause_extra").eq("user_id", userId), "load squad");
   const starters = unwrap<{ player_id: string }[]>(await db.from("lineups").select("player_id").eq("user_id", userId), "load lineup");
   const ids = squad.map((s) => s.player_id);
   const [players, points] = await Promise.all([getPlayers(db, ids), pointsThisCycle(db, ids, now)]);
   const starterIds = new Set(starters.map((s) => s.player_id));
+  const extraOf = new Map(squad.map((s) => [s.player_id, s.clause_extra]));
   return players
-    .map((p) => ({ ...p, starter: starterIds.has(p.id), cyclePoints: points.get(p.id) ?? 0 }))
+    .map((p) => ({ ...p, starter: starterIds.has(p.id), cyclePoints: points.get(p.id) ?? 0, clauseExtra: extraOf.get(p.id) ?? 0 }))
     .sort((a, b) => b.value - a.value);
 }
 
@@ -112,8 +113,8 @@ export async function getPlayerDirectory(db: SupabaseClient): Promise<DirectoryR
   const [players, squads, teams, matches, results, snapshots] = await Promise.all([
     fetchAllPages<{ id: string; display_name: string; color: string; gender: Gender; value: number; matches_played: number; ratio: number }>(
       "load players", (from, to) => db.from("players").select("id, display_name, color, gender, value, matches_played, ratio").eq("active", true).order("id").range(from, to)),
-    fetchAllPages<{ player_id: string; user_id: string }>(
-      "load owners", (from, to) => db.from("squads").select("player_id, user_id").order("player_id").range(from, to)),
+    fetchAllPages<{ player_id: string; user_id: string; clause_extra: number }>(
+      "load owners", (from, to) => db.from("squads").select("player_id, user_id, clause_extra").order("player_id").range(from, to)),
     fetchAllPages<TeamRow>(
       "load teams", (from, to) => db.from("profiles").select("user_id, team_name").order("user_id").range(from, to)),
     fetchAllPages<MatchRow>(
@@ -126,13 +127,14 @@ export async function getPlayerDirectory(db: SupabaseClient): Promise<DirectoryR
 
   const teamName = new Map(teams.map((t) => [t.user_id, t.team_name]));
   const ownerOf = new Map(squads.map((s) => [s.player_id, teamName.get(s.user_id) ?? null]));
+  const extraOf = new Map(squads.map((s) => [s.player_id, s.clause_extra]));
   const stats = buildPlayerStats(matches, results, snapshots);
   const weekly = weeklyPointsByPlayer(matches, results, new Date(), 4);
 
   return players.map((p) => {
     const s = stats.get(p.id);
     return {
-      id: p.id, name: p.display_name, gender: p.gender, color: p.color, value: p.value, owner: ownerOf.get(p.id) ?? null,
+      id: p.id, name: p.display_name, gender: p.gender, color: p.color, value: p.value, owner: ownerOf.get(p.id) ?? null, clauseExtra: extraOf.get(p.id) ?? 0,
       matches: p.matches_played, winRate: Number(p.ratio),
       called: s?.called ?? 0, points: s?.points ?? 0, average: s && s.played > 0 ? s.points / s.played : null,
       trend: formTrend(weekly.get(p.id) ?? []),
@@ -226,7 +228,7 @@ export async function getTeamJornada(db: SupabaseClient, teamUserId: string, wee
   return teamJornada({ weekStart, snapshots, squadIds: squad.map((s) => s.player_id), matches, results, players });
 }
 
-export type TeamPlayer = { id: string; name: string; color: string; value: number; starter: boolean };
+export type TeamPlayer = { id: string; name: string; color: string; value: number; starter: boolean; clauseExtra: number };
 export type TeamView = { user_id: string; team_name: string; avatar_url: string | null; players: TeamPlayer[]; teamValue: number; lineupDate: string | null };
 
 /**
@@ -237,15 +239,16 @@ export async function getTeamView(db: SupabaseClient, teamUserId: string): Promi
   const team = unwrap<TeamRow | null>(await db.from("profiles").select("user_id, team_name, avatar_url").eq("user_id", teamUserId).maybeSingle(), "load team");
   if (!team) return null;
   const [squad, latest] = await Promise.all([
-    unwrap<{ player_id: string }[]>(await db.from("squads").select("player_id").eq("user_id", teamUserId), "load team squad"),
+    unwrap<{ player_id: string; clause_extra: number }[]>(await db.from("squads").select("player_id, clause_extra").eq("user_id", teamUserId), "load team squad"),
     unwrap<{ cycle_date: string }[]>(await db.from("lineup_snapshots").select("cycle_date").eq("user_id", teamUserId).order("cycle_date", { ascending: false }).limit(1), "load latest lineup"),
   ]);
   const lineupDate = latest[0]?.cycle_date ?? null;
   const starters = lineupDate === null ? [] : unwrap<{ player_id: string }[]>(
     await db.from("lineup_snapshots").select("player_id").eq("user_id", teamUserId).eq("cycle_date", lineupDate), "load starters");
   const starterIds = new Set(starters.map((s) => s.player_id));
+  const extraOf = new Map(squad.map((s) => [s.player_id, s.clause_extra]));
   const players = (await getPlayers(db, squad.map((s) => s.player_id)))
-    .map((p) => ({ id: p.id, name: p.display_name, color: p.color, value: p.value, starter: starterIds.has(p.id) }))
+    .map((p) => ({ id: p.id, name: p.display_name, color: p.color, value: p.value, starter: starterIds.has(p.id), clauseExtra: extraOf.get(p.id) ?? 0 }))
     .sort((a, b) => Number(b.starter) - Number(a.starter) || b.value - a.value);
   return { ...team, avatar_url: team.avatar_url ?? null, players, teamValue: players.reduce((sum, p) => sum + p.value, 0), lineupDate };
 }
