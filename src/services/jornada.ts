@@ -121,3 +121,15 @@ export function jornadaFeedRows(
     return [{ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at: endOfWeek(weekStart).toISOString(), podium }];
   });
 }
+
+export type JornadaRow = { key: string; id: string; name: string; color: string; points: number; counted: boolean };
+
+/**
+ * The rows of a team's jornada table: first the players who were starters (their points count), then, shaded, those
+ * who scored while not called up (their points did not count). A player who did both gets a row in each part.
+ */
+export function jornadaRows(detail: TeamJornada): JornadaRow[] {
+  const starters = detail.players.filter((p) => p.daysCalled > 0 || p.counted > 0).map((p) => ({ key: `${p.id}-in`, id: p.id, name: p.name, color: p.color, points: p.counted, counted: true }));
+  const bench = detail.players.filter((p) => p.missed > 0).map((p) => ({ key: `${p.id}-out`, id: p.id, name: p.name, color: p.color, points: p.missed, counted: false }));
+  return [...starters.sort((a, b) => b.points - a.points), ...bench.sort((a, b) => b.points - a.points)];
+}

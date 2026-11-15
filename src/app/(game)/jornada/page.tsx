@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { requireManager } from "@/lib/session";
 import { getJornada, getTeamJornada } from "@/services/game-data";
-import { jornadaLabel, nextWeek, previousWeek } from "@/services/jornada";
+import { jornadaLabel, jornadaRows, nextWeek, previousWeek } from "@/services/jornada";
 
 export const metadata = { title: "Jornada · Padel Fantasy" };
 
@@ -54,31 +54,23 @@ export default async function JornadaPage({ searchParams }: { searchParams: Prom
       ) : (
         <div className="table-wrap standings-wrap">
           <table className="standings">
-            <thead>
-              <tr>
-                <th>Jugador</th>
-                <th className="num" title="Días que fue titular esta jornada">Días</th>
-                <th className="num" title="Puntos que sumaron al equipo: los días que era titular">Puntos</th>
-                <th className="num" title="Puntos que hizo cuando no estaba convocado y no sumaron">Sin convocar</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Jugador</th><th className="num">Puntos</th></tr></thead>
             <tbody>
-              {detail.players.map((p) => (
-                <tr key={p.id}>
-                  <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.name}</td>
-                  <td className="num">{p.daysCalled}</td>
-                  <td className="num">{p.counted}</td>
-                  <td className="num missed">{p.missed > 0 ? p.missed : "–"}</td>
+              {jornadaRows(detail).map((row) => (
+                <tr key={row.key} className={row.counted ? undefined : "bench-row"}>
+                  <td>
+                    <span className={`chip color-${row.color}`}>{row.color}</span> {row.name}
+                    {row.counted ? null : <small className="bench-tag"> · no convocado</small>}
+                  </td>
+                  <td className="num">{row.points}</td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr><td>Total</td><td /><td className="num">{detail.counted}</td><td className="num missed">{detail.missed > 0 ? detail.missed : "–"}</td></tr>
-            </tfoot>
+            <tfoot><tr><td>Puntos del equipo</td><td className="num">{detail.counted}</td></tr></tfoot>
           </table>
         </div>
       )}
-      <p className="lead">«Sin convocar» son puntos de jugadores de la plantilla actual en días en que no eran titulares.</p>
+      <p className="lead">Las filas sombreadas son jugadores de su plantilla actual que puntuaron en días en que no eran titulares: no suman al equipo.</p>
     </>
   );
 }

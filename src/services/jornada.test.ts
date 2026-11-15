@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jornadaFeedRows, jornadaLabel, jornadaWeeks, teamJornada, weekRanking } from "@/services/jornada";
+import { jornadaFeedRows, jornadaRows, jornadaLabel, jornadaWeeks, teamJornada, weekRanking } from "@/services/jornada";
 
 const teams = [{ user_id: "a", team_name: "Alfa" }, { user_id: "b", team_name: "Beta" }, { user_id: "c", team_name: "Cero" }];
 const rows = [
@@ -64,5 +64,16 @@ describe("jornadaFeedRows", () => {
   });
   it("skips the running week", () => {
     expect(jornadaFeedRows(teams, rows, "2026-11-10", (w) => new Date(w))).toEqual([]);
+  });
+});
+
+describe("jornadaRows", () => {
+  it("lists starters first, then shaded bench rows; a player who did both appears in each part", () => {
+    const rows = jornadaRows({ counted: 8, missed: 10, players: [
+      { id: "p1", name: "Uno", color: "Azul", counted: 8, missed: 6, daysCalled: 1 },
+      { id: "p2", name: "Dos", color: "Rosa", counted: 0, missed: 4, daysCalled: 0 },
+      { id: "p3", name: "Tres", color: "Oro", counted: 0, missed: 0, daysCalled: 1 },
+    ] });
+    expect(rows.map((r) => [r.name, r.points, r.counted])).toEqual([["Uno", 8, true], ["Tres", 0, true], ["Uno", 6, false], ["Dos", 4, false]]);
   });
 });
