@@ -16,6 +16,20 @@ permissions:
   contents: read
 
 jobs:
+  # Secrets cannot be read in a job-level `if`, so this job reports whether the publish secrets exist.
+  # Without them (the repo has none yet) migrate and deploy are skipped instead of failing, and the run stays green.
+  publish-enabled:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ] && [ -n "$VERCEL_TOKEN" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT"; else echo "enabled=false" >> "$GITHUB_OUTPUT"; echo "::notice::Publishing skipped: SUPABASE_DB_URL / VERCEL_TOKEN are not set as repository secrets."; fi
+
   checks:
     runs-on: ubuntu-latest
     env:
@@ -32,7 +46,8 @@ jobs:
       - run: npx next build
 
   migrate:
-    needs: checks
+    needs: [checks, publish-enabled]
+    if: needs.publish-enabled.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +65,8 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
   deploy:
-    needs: migrate
+    needs: [migrate, publish-enabled]
+    if: needs.publish-enabled.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
