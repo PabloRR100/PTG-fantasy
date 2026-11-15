@@ -87,3 +87,12 @@ describe("jornada_closed", () => {
     expect(prefAllows("jornada_closed", { bids: false, market: false, jornada: true })).toBe(true);
   });
 });
+
+describe("clause_taken", () => {
+  test("tells the seller who took which player and what they got", () => {
+    const p = buildNotification(row({ kind: "clause_taken", data: { player: "Kike", amount: 3_000_000, buyer: "Pepo PC" } }));
+    expect(p.title).toBe("Te han pagado una cláusula");
+    expect(p.body).toContain("Pepo PC se ha llevado a Kike por");
+    expect(p.url).toBe("/equipo");
+  });
+});

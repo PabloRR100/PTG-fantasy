@@ -5,7 +5,7 @@ import type { Gender } from "@/services/player-directory";
 /** A row of the Tablón: one operation between a team and the market, with the names already joined in. */
 export type ActivityRow = {
   id: number;
-  kind: "signed" | "sold";
+  kind: "signed" | "sold" | "clause";
   /** null when the team was deleted after the operation (its rows go with it, so this is only a safety net). */
   team: string | null;
   /** The team owner's shared photo (profiles.avatar_url), or null. */
@@ -19,6 +19,7 @@ export type ActivityRow = {
 
 export function describeActivity(row: ActivityRow): { icon: "signed" | "sold"; heading: string; text: string } {
   const team = row.team ?? "Un equipo";
+  if (row.kind === "clause") return { icon: "signed", heading: "Cláusula", text: `${team} ha pagado la cláusula de ${row.player}` };
   if (row.kind === "signed") return { icon: "signed", heading: "Fichaje", text: `${team} ha fichado a ${row.player}` };
   return { icon: "sold", heading: "Venta al mercado", text: `${team} ha vendido a ${row.player} al mercado` };
 }

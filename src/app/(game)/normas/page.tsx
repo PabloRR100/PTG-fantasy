@@ -62,6 +62,15 @@ export default function NormasPage() {
           <li>Si vendes a un titular, entra en su lugar el suplente de más valor de ese nivel.</li>
         </ul>
 
+        <h2>Cláusulas</h2>
+        <ul>
+          <li>Puedes llevarte a un jugador de otro equipo pagando su <strong>cláusula: el doble de su valor de mercado</strong>. Lo haces desde Jugadores, o pulsando un equipo en Clasificación o en Jornada.</li>
+          <li>El pago es inmediato y el dinero va al equipo que lo tenía. Necesitas saldo suficiente.</li>
+          <li>Ese equipo debe conservar <strong>al menos 2 jugadores de cada nivel</strong>: si no, no se puede.</li>
+          <li>Si era titular, entra en su lugar su suplente de más valor de ese nivel. El jugador llega a tu banquillo.</li>
+          <li>Se avisa al equipo que pierde al jugador, y la operación aparece en el Tablón.</li>
+        </ul>
+
         <h2>Valor de los jugadores</h2>
         <ul>
           <li>El valor sale de los datos de la liga cuando se importa el jugador: una base por nivel (Blanco la más alta, Naranja la más baja), ajustada por su porcentaje de victorias y por cuánto juega.</li>

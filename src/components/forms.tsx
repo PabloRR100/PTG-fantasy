@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import {
-  closeMarket, createTeam, placeBid, saveLineup, sellPlayer, type ActionState,
+  closeMarket, createTeam, payReleaseClause, placeBid, saveLineup, sellPlayer, type ActionState,
 } from "@/app/actions";
 import { formatMoney } from "@/lib/format";
 import { LEVELS, levelOf, lineupProblem, toggleStarter, type Color, type SquadPlayer } from "@/services/lineup";
@@ -101,6 +101,22 @@ export function CloseMarketButton() {
       <button type="submit" disabled={pending} onClick={(e) => { if (!window.confirm("¿Cerrar el mercado ahora? Se resuelven las pujas y no se puede deshacer.")) e.preventDefault(); }}>
         {pending ? "Cerrando…" : "Cerrar mercado ahora"}
       </button>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
+/** Pay a rival's release clause for one player. The price is sent so the server refuses if the value moved meanwhile. */
+export function ClauseForm({ player, price, name, budget }: { player: string; price: number; name: string; budget: number }) {
+  const [state, action, pending] = useActionState(payReleaseClause, NONE);
+  if (budget < price) return <span className="hint">{formatMoney(price)} · saldo insuficiente</span>;
+  return (
+    <form action={action} className="clause-form" onSubmit={(event) => {
+      if (!window.confirm(`¿Pagar la cláusula de ${name} por ${formatMoney(price)}? El dinero va al equipo que lo tiene.`)) event.preventDefault();
+    }}>
+      <input type="hidden" name="player" value={player} />
+      <input type="hidden" name="price" value={price} />
+      <button type="submit" disabled={pending}>{pending ? "Pagando…" : `Cláusula · ${formatMoney(price)}`}</button>
       <Feedback state={state} />
     </form>
   );

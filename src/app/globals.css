@@ -282,14 +282,14 @@ td.trend { text-align: center; font-family: var(--label); font-weight: 700; }
 .day-line::before, .day-line::after { content: ""; flex: 1; height: 1px; background: var(--fog); opacity: .6; }
 .day-separator { font: 700 .75rem var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--ash); background: var(--paper); border: 1px solid var(--fog); border-radius: 999px; padding: 3px 12px; }
 .feed-card { display: flex; gap: 12px; align-items: center; padding: 12px 14px; background: var(--paper-light); border: 1px solid var(--fog); border-left-width: 4px; border-radius: var(--radius-card); }
-.feed-card-signed { border-left-color: var(--court); }
+.feed-card-signed, .feed-card-clause { border-left-color: var(--court); }
 .feed-card-sold { border-left-color: var(--ball); }
 .feed-body { flex: 1; min-width: 0; }
 .feed-body p { margin: 0; }
 .feed-kind { display: flex; align-items: center; gap: 6px; font: 700 .72rem var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--ash); margin-bottom: 2px !important; }
-.feed-card-signed .feed-kind { color: var(--court); }
+.feed-card-signed .feed-kind, .feed-card-clause .feed-kind { color: var(--court); }
 .feed-amount { font: 800 1rem var(--display); white-space: nowrap; }
-.feed-card-signed .feed-amount { color: var(--court); }
+.feed-card-signed .feed-amount, .feed-card-clause .feed-amount { color: var(--court); }
 @media (max-width: 520px) { .feed-card { align-items: flex-start; flex-wrap: wrap; } .feed-amount { margin-left: auto; } }
 
 .install-steps { margin: 6px 0 0; padding-left: 1.2rem; font-size: .9rem; }
@@ -322,3 +322,6 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
 .delta-up { color: #1f9d55; } .delta-down { color: var(--error); } .delta-flat { color: var(--ash); }
 .podium-more { margin: 0 0 4px 1.6rem; font-size: .75rem; color: var(--ash); }
 .chip-fixed { width: 6.5rem; justify-self: start; align-self: center; flex: none; }
+
+.clause-form { display: grid; gap: 4px; justify-items: start; }
+.clause-form button { white-space: nowrap; }

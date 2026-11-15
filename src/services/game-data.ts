@@ -225,3 +225,12 @@ export async function getTeamJornada(db: SupabaseClient, teamUserId: string, wee
     "load jornada players", (from, to) => db.from("players").select("id, display_name, color").in("id", ids).order("id").range(from, to));
   return teamJornada({ weekStart, snapshots, squadIds: squad.map((s) => s.player_id), matches, results, players });
 }
+
+export type RivalPlayer = { id: string; name: string; color: string; value: number };
+
+/** A team's whole squad, for the clause table. Squads and players are readable by every signed-in user (RLS). */
+export async function getTeamSquad(db: SupabaseClient, teamUserId: string): Promise<RivalPlayer[]> {
+  const squad = unwrap<{ player_id: string }[]>(await db.from("squads").select("player_id").eq("user_id", teamUserId), "load team squad");
+  const players = await getPlayers(db, squad.map((s) => s.player_id));
+  return players.map((p) => ({ id: p.id, name: p.display_name, color: p.color, value: p.value })).sort((a, b) => b.value - a.value);
+}
