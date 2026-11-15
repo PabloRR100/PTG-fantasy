@@ -12,7 +12,7 @@ import type { JornadaFeedRow } from "@/services/jornada";
  */
 export function ActivityFeed({ rows, jornadas = [], now = new Date() }: { rows: ActivityRow[]; jornadas?: JornadaFeedRow[]; now?: Date }) {
   const items = [...rows, ...jornadas].sort((a, b) => b.created_at.localeCompare(a.created_at));
-  // As in Betcomm, the newest closed jornada opens with the whole table; older ones show their podium.
+  // As in Betcomm, the newest jornada card (the running week, when it has points) opens with the whole table; older ones show their podium.
   const latestJornada = [...jornadas].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.id;
   if (items.length === 0) {
     return <p className="empty-feed">Todavía no hay movimientos. Aparecerán aquí los fichajes y las ventas al mercado.</p>;
