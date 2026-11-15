@@ -8,8 +8,8 @@ vi.mock("@/app/actions", () => ({ placeBid: vi.fn(), closeMarket: vi.fn(), creat
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const rows: MarketRow[] = [
-  { id: "a", listingId: "L1", myBid: null, gender: "male", name: "Kike", color: "Oro", value: 600_000, owner: null, clauseExtra: 0, matches: 3, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
-  { id: "b", listingId: "L2", myBid: 750_000, gender: "female", name: "Marta", color: "Naranja", value: 300_000, owner: null, clauseExtra: 0, matches: 1, winRate: 0.2, called: 0, points: 0, average: null, trend: "up" },
+  { id: "a", listingId: "L1", myBid: null, gender: "male", name: "Kike", color: "Oro", value: 600_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 3, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
+  { id: "b", listingId: "L2", myBid: 750_000, gender: "female", name: "Marta", color: "Naranja", value: 300_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.2, called: 0, points: 0, average: null, trend: "up" },
 ];
 
 let host: HTMLDivElement;

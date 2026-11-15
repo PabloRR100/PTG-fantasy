@@ -47,7 +47,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
                   <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.name}</td>
                   <td>{p.starter ? "Titular" : "Banquillo"}</td>
                   <td className="num">{formatMoney(p.value)}</td>
-                  <td><ClauseForm player={p.id} price={clausePrice(p.value, p.clauseExtra)} name={p.name} budget={profile.budget} /></td>
+                  <td><ClauseForm player={p.id} price={clausePrice(p.value, p.clauseExtra)} name={p.name} budget={profile.budget} protectedUntil={p.protectedUntil} /></td>
                 </tr>
               ))}
             </tbody>

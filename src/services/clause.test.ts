@@ -17,3 +17,14 @@ describe("clause maths", () => {
     expect(lockCost(100_000, 100_000)).toBe(0);
   });
 });
+
+import { isProtected, protectedUntilLabel } from "@/services/clause";
+describe("protection helpers", () => {
+  test("isProtected compares with now and ignores null", () => {
+    const now = new Date("2026-11-16T10:00:00Z");
+    expect(isProtected("2026-11-17T10:00:00Z", now)).toBe(true);
+    expect(isProtected("2026-11-16T09:59:00Z", now)).toBe(false);
+    expect(isProtected(null, now)).toBe(false);
+  });
+  test("the label is in Madrid time", () => expect(protectedUntilLabel("2026-11-19T05:12:00Z")).toContain("06:12"));
+});

@@ -24,6 +24,8 @@ export type DirectoryRow = {
   owner: string | null;
   /** What the owner added on top of the clause floor (squads.clause_extra); 0 when free. */
   clauseExtra: number;
+  /** The owner just signed him: no clause can be paid before this instant (squads.protected_until); null = not protected. */
+  protectedUntil: string | null;
   /** Matches played in PTG this semester (from PTG's ranking). */
   matches: number;
   /** PTG win ratio, 0 to 1. */

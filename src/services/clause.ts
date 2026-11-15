@@ -22,3 +22,15 @@ export function maxExtra(value: number): number {
 export function lockCost(from: number, to: number): number {
   return Math.trunc(((to - from) * LOCK_SHARE));
 }
+
+/** A player who just joined a team (market signing or clause) cannot be taken by clause for this long (migration 0016). */
+export const PROTECTION_DAYS = 3;
+
+export function isProtected(until: string | null, now = new Date()): boolean {
+  return until !== null && new Date(until).getTime() > now.getTime();
+}
+
+/** "lun 16 nov, 06:12" in Madrid time. */
+export function protectedUntilLabel(until: string): string {
+  return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until)).replace(/\./g, "").replace(/ de /g, " ");
+}
