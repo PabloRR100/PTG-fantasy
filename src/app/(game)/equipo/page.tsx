@@ -1,6 +1,6 @@
 import { ClauseEditor, LineupForm, SellButton } from "@/components/forms";
 import { formatMoney } from "@/lib/format";
-import { clausePrice } from "@/services/clause";
+import { clausePrice, isProtected, protectedUntilLabel } from "@/services/clause";
 import { requireManager } from "@/lib/session";
 import { LEVELS, levelOf } from "@/services/lineup";
 import { getSquad } from "@/services/game-data";
@@ -41,7 +41,7 @@ export default async function EquipoPage() {
       <h2>Cláusulas</h2>
       <p className="lead">
         Cualquier rival puede llevarse a uno de tus jugadores pagando su cláusula: el doble de su valor más lo que añadas aquí, y ese dinero es para ti.
-        Subir la cláusula bloquea la mitad del aumento de tu presupuesto; al bajarla, te devuelve esa mitad. Máximo: el cuádruple del valor.
+        Subir la cláusula bloquea la mitad del aumento de tu presupuesto; al bajarla, te devuelve esa mitad. Máximo: el cuádruple del valor. Un jugador recién fichado está protegido 3 días: nadie puede pagar su cláusula.
         Si vendes un jugador al mercado, lo bloqueado en él no se devuelve: bájala antes. Tu saldo: <strong>{formatMoney(profile.budget)}</strong>.
       </p>
       <div className="table-wrap standings-wrap">
@@ -52,7 +52,7 @@ export default async function EquipoPage() {
               <tr key={p.id}>
                 <td><span className={`chip color-${p.color}`}>{p.color}</span> {p.display_name}</td>
                 <td className="num">{formatMoney(p.value)}</td>
-                <td className="num">{formatMoney(clausePrice(p.value, p.clauseExtra))}</td>
+                <td className="num">{formatMoney(clausePrice(p.value, p.clauseExtra))}{isProtected(p.protectedUntil) && <small className="hint"><br />Nadie puede pagarla hasta {protectedUntilLabel(p.protectedUntil!)}</small>}</td>
                 <td><ClauseEditor player={p.id} value={p.value} extra={p.clauseExtra} budget={profile.budget} /></td>
               </tr>
             ))}

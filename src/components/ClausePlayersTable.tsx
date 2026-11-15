@@ -10,7 +10,7 @@ export function ClausePlayersTable({ rows, myTeam, budget }: { rows: DirectoryRo
   return (
     <PlayersTable rows={rows} extra={{
       label: "Cláusula",
-      cell: (row) => row.owner === null || row.owner === myTeam ? null : <ClauseForm player={row.id} price={clausePrice(row.value, row.clauseExtra)} name={row.name} budget={budget} />,
+      cell: (row) => row.owner === null || row.owner === myTeam ? null : <ClauseForm player={row.id} price={clausePrice(row.value, row.clauseExtra)} name={row.name} budget={budget} protectedUntil={row.protectedUntil} />,
     }} />
   );
 }

@@ -69,6 +69,7 @@ export default function NormasPage() {
           <li>Ese equipo debe conservar <strong>al menos 2 jugadores de cada nivel</strong>: si no, no se puede.</li>
           <li>Si era titular, entra en su lugar su suplente de más valor de ese nivel. El jugador llega a tu banquillo.</li>
           <li>Puedes <strong>blindar</strong> a tus jugadores desde Equipo: subir su cláusula hasta el cuádruple de su valor, en pasos de 10.000 €. Subirla bloquea la mitad del aumento de tu presupuesto y bajarla te devuelve esa mitad; cuando un rival paga, el dinero íntegro es para ti y lo bloqueado se pierde con el jugador. Un jugador que llega a un equipo (puja o cláusula) empieza con la cláusula base.</li>
+          <li>Un jugador que acaba de fichar (por puja o por cláusula) está <strong>protegido 3 días</strong>: en ese tiempo nadie puede pagar su cláusula. Los jugadores de la plantilla inicial no tienen esa protección.</li>
           <li>Se avisa al equipo que pierde al jugador, y la operación aparece en el Tablón.</li>
         </ul>
 

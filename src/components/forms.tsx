@@ -5,7 +5,7 @@ import {
   closeMarket, createTeam, payReleaseClause, placeBid, setClauseExtra, saveLineup, sellPlayer, type ActionState,
 } from "@/app/actions";
 import { formatMoney } from "@/lib/format";
-import { CLAUSE_STEP, clausePrice, lockCost, maxExtra } from "@/services/clause";
+import { CLAUSE_STEP, clausePrice, isProtected, lockCost, maxExtra, protectedUntilLabel } from "@/services/clause";
 import { LEVELS, levelOf, lineupProblem, toggleStarter, type Color, type SquadPlayer } from "@/services/lineup";
 
 const NONE: ActionState = {};
@@ -108,8 +108,9 @@ export function CloseMarketButton() {
 }
 
 /** Pay a rival's release clause for one player. The price is sent so the server refuses if the value moved meanwhile. */
-export function ClauseForm({ player, price, name, budget }: { player: string; price: number; name: string; budget: number }) {
+export function ClauseForm({ player, price, name, budget, protectedUntil = null }: { player: string; price: number; name: string; budget: number; protectedUntil?: string | null }) {
   const [state, action, pending] = useActionState(payReleaseClause, NONE);
+  if (protectedUntil !== null && isProtected(protectedUntil)) return <span className="hint">Protegido hasta {protectedUntilLabel(protectedUntil)}</span>;
   if (budget < price) return <span className="hint">{formatMoney(price)} · saldo insuficiente</span>;
   return (
     <form action={action} className="clause-form" onSubmit={(event) => {

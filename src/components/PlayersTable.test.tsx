@@ -8,11 +8,11 @@ import type { DirectoryRow } from "@/services/player-directory";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const rows: DirectoryRow[] = [
-  { gender: "male", id: "p1", name: "Kike", color: "Blanco", value: 2_000_000, owner: "Los Pepros", clauseExtra: 0, matches: 1280, winRate: 0.55, called: 4, points: 40, average: 5, trend: null },
-  { gender: "male", id: "p2", name: "Álvaro Born", color: "Blanco", value: 1_700_000, owner: null, clauseExtra: 0, matches: 240, winRate: 0.57, called: 0, points: 21, average: 7, trend: null },
-  { gender: "male", id: "p3", name: "Edu Laviña", color: "Azul", value: 1_500_000, owner: "Gamma", clauseExtra: 0, matches: 225, winRate: 0.48, called: 2, points: 6, average: 3, trend: null },
-  { gender: "male", id: "p4", name: "Mario", color: "Verde", value: 900_000, owner: null, clauseExtra: 0, matches: 30, winRate: 0.7, called: 1, points: 0, average: null, trend: null },
-  { gender: "male", id: "p5", name: "Mario", color: "Rosa", value: 300_000, owner: "Los Pepros", clauseExtra: 0, matches: 12, winRate: 0.2, called: 0, points: 12, average: 4.25, trend: null },
+  { gender: "male", id: "p1", name: "Kike", color: "Blanco", value: 2_000_000, owner: "Los Pepros", clauseExtra: 0, protectedUntil: null, matches: 1280, winRate: 0.55, called: 4, points: 40, average: 5, trend: null },
+  { gender: "male", id: "p2", name: "Álvaro Born", color: "Blanco", value: 1_700_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 240, winRate: 0.57, called: 0, points: 21, average: 7, trend: null },
+  { gender: "male", id: "p3", name: "Edu Laviña", color: "Azul", value: 1_500_000, owner: "Gamma", clauseExtra: 0, protectedUntil: null, matches: 225, winRate: 0.48, called: 2, points: 6, average: 3, trend: null },
+  { gender: "male", id: "p4", name: "Mario", color: "Verde", value: 900_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 30, winRate: 0.7, called: 1, points: 0, average: null, trend: null },
+  { gender: "male", id: "p5", name: "Mario", color: "Rosa", value: 300_000, owner: "Los Pepros", clauseExtra: 0, protectedUntil: null, matches: 12, winRate: 0.2, called: 0, points: 12, average: 4.25, trend: null },
 ];
 
 let host: HTMLDivElement;
@@ -180,9 +180,9 @@ describe("PlayersTable", () => {
 
 describe("PlayersTable categories", () => {
   const mixed: DirectoryRow[] = [
-    { id: "m1", gender: "male", name: "Aitor", color: "Azul", value: 900_000, owner: null, clauseExtra: 0, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
-    { id: "f1", gender: "female", name: "Marta", color: "Azul", value: 800_000, owner: null, clauseExtra: 0, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
-    { id: "f2", gender: "female", name: "Nuria", color: "Rosa", value: 700_000, owner: "Gamma", clauseExtra: 0, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
+    { id: "m1", gender: "male", name: "Aitor", color: "Azul", value: 900_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
+    { id: "f1", gender: "female", name: "Marta", color: "Azul", value: 800_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
+    { id: "f2", gender: "female", name: "Nuria", color: "Rosa", value: 700_000, owner: "Gamma", clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.5, called: 0, points: 0, average: null, trend: null },
   ];
   const render = () => { act(() => root.render(<PlayersTable rows={mixed} />)); };
   const colorCells = () => Array.from(host.querySelectorAll("tbody tr td:nth-child(2)")).map((td) => td.textContent);
@@ -247,9 +247,9 @@ describe("PlayersTable categories", () => {
 
 describe("PlayersTable form column", () => {
   const withTrend: DirectoryRow[] = [
-    { id: "a", gender: "male", name: "Sube", color: "Azul", value: 3, owner: null, clauseExtra: 0, matches: 1, winRate: 0.5, called: 0, points: 9, average: 9, trend: "up" },
-    { id: "b", gender: "male", name: "Baja", color: "Azul", value: 2, owner: null, clauseExtra: 0, matches: 1, winRate: 0.5, called: 0, points: 1, average: 1, trend: "down" },
-    { id: "c", gender: "male", name: "Nuevo", color: "Azul", value: 1, owner: null, clauseExtra: 0, matches: 0, winRate: 0, called: 0, points: 0, average: null, trend: null },
+    { id: "a", gender: "male", name: "Sube", color: "Azul", value: 3, owner: null, clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.5, called: 0, points: 9, average: 9, trend: "up" },
+    { id: "b", gender: "male", name: "Baja", color: "Azul", value: 2, owner: null, clauseExtra: 0, protectedUntil: null, matches: 1, winRate: 0.5, called: 0, points: 1, average: 1, trend: "down" },
+    { id: "c", gender: "male", name: "Nuevo", color: "Azul", value: 1, owner: null, clauseExtra: 0, protectedUntil: null, matches: 0, winRate: 0, called: 0, points: 0, average: null, trend: null },
   ];
   test("shows an arrow per player and a dash when there is no history, each with a spoken label", () => {
     act(() => root.render(<PlayersTable rows={withTrend} />));
@@ -267,8 +267,8 @@ describe("PlayersTable form column", () => {
 
 describe("PlayersTable as the Mercado table", () => {
   const listed = [
-    { id: "a", gender: "male", name: "Kike", color: "Blanco", value: 2_000_000, owner: null, clauseExtra: 0, matches: 10, winRate: 0.5, called: 0, points: 0, average: null, trend: "up" },
-    { id: "b", gender: "female", name: "Marta", color: "Azul", value: 1_000_000, owner: null, clauseExtra: 0, matches: 5, winRate: 0.4, called: 0, points: 0, average: null, trend: null },
+    { id: "a", gender: "male", name: "Kike", color: "Blanco", value: 2_000_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 10, winRate: 0.5, called: 0, points: 0, average: null, trend: "up" },
+    { id: "b", gender: "female", name: "Marta", color: "Azul", value: 1_000_000, owner: null, clauseExtra: 0, protectedUntil: null, matches: 5, winRate: 0.4, called: 0, points: 0, average: null, trend: null },
   ] as DirectoryRow[];
   const market = (props: Partial<React.ComponentProps<typeof PlayersTable>> = {}) =>
     act(() => root.render(<PlayersTable rows={listed} omit={["owner", "called", "points", "average"]} extra={{ label: "Tu puja", cell: (r) => <button type="button" data-bid={r.id}>Pujar</button> }} {...props} />));

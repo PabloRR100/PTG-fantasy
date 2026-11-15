@@ -115,3 +115,34 @@ describe("set_clause_extra (clause protection)", () => {
   });
 });
 
+describe("protection after a signing", () => {
+  test("a player taken by clause is protected for 3 days: nobody can take him back, then anybody can", async () => {
+    const [buyer, seller, third] = [await team("Comprador"), await team("Vendedor"), await team("Tercero")];
+    const p = (await squadOf(seller)).find((x) => x.starter)!;
+    await pay(buyer, p.id, clausePrice(p.value));
+    await expect(pay(seller, p.id, clausePrice(p.value))).rejects.toThrow(/clause protected/);
+    await expect(pay(third, p.id, clausePrice(p.value))).rejects.toThrow(/clause protected/);
+    await db.query("update squads set protected_until = now() - interval '1 minute' where player_id = $1", [p.id]);
+    await pay(third, p.id, clausePrice(p.value));
+    expect((await q("select user_id from squads where player_id = $1", [p.id]))[0]).toEqual({ user_id: third });
+  });
+
+  test("the protection lasts 3 days from the clause", async () => {
+    const [buyer, seller] = [await team("Comprador"), await team("Vendedor")];
+    const p = (await squadOf(seller))[0];
+    await pay(buyer, p.id, clausePrice(p.value));
+    const hours = (await q<{ h: number }>("select (extract(epoch from protected_until - now()) / 3600)::int h from squads where player_id = $1", [p.id]))[0].h;
+    expect(hours).toBeGreaterThanOrEqual(71);
+    expect(hours).toBeLessThanOrEqual(72);
+  });
+
+  test("a market signing is protected too, a starting squad is not", async () => {
+    const owner = await team("Dueño");
+    expect(await q("select 1 from squads where user_id = $1 and protected_until is not null", [owner])).toEqual([]);
+    const player = (await q<{ id: string }>("select id from players where id not in (select player_id from squads) limit 1"))[0].id;
+    await db.query("insert into squads (player_id, user_id) values ($1, $2)", [player, owner]);
+    await db.query("insert into activity (kind, user_id, player_id, amount) values ('signed', $1, $2, 1)", [owner, player]); // what close_cycle writes
+    expect((await q<{ p: boolean }>("select protected_until > now() p from squads where player_id = $1", [player]))[0].p).toBe(true);
+  });
+});
+
