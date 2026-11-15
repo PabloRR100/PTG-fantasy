@@ -8,6 +8,9 @@ current; a weekly one is enough for the final numbers.
 
 ## One run
 
+`PTG_SURFACE=surface:N scripts/daily-sync.sh` does steps 2-4 below in one go and stops at the first problem (a logged-out tab
+fails in the scrape, before anything is written). The numbered steps are what it runs.
+
 1. Open the league's site in a cmux browser tab and log in (credentials are never stored by the project).
    Find its surface: `cmux list-pane-surfaces --pane <pane>`.
 2. Save results and matches (only the game's levels, men and women): `PTG_SURFACE=surface:N MATCHES_ONLY=1 scripts/scrape-ptg.sh tmp/scrape-matches`
