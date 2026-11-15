@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { formatMoney } from "@/lib/format";
 import type { StandingRow } from "@/services/standings";
@@ -21,10 +22,10 @@ export function StandingsTable({ rows, myUserId }: { rows: StandingRow[]; myUser
             <tr key={row.user_id} className={row.user_id === myUserId ? "me" : undefined}>
               <td>{row.rank}</td>
               <td>
-                <span className="team-cell">
+                <Link className="team-cell" href={`/jornada?equipo=${row.user_id}`} title="Ver su jornada">
                   <Avatar url={row.avatar_url} name={row.team_name} size="xs" />
                   <span className="team-name">{row.team_name}</span>
-                </span>
+                </Link>
               </td>
               <td className="num">{row.week}</td>
               <td className="num">{row.total}</td>

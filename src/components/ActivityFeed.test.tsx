@@ -19,6 +19,18 @@ beforeEach(() => { host = document.createElement("div"); document.body.append(ho
 afterEach(() => { act(() => root.unmount()); host.remove(); });
 const render = (node: React.ReactNode) => act(() => root.render(node));
 
+describe("ActivityFeed jornada card", () => {
+  test("shows a closed jornada's podium among the day's events, linking to its page", () => {
+    const jornada = { kind: "jornada" as const, id: "jornada-2026-11-09", weekStart: "2026-11-09", created_at: "2026-11-16T04:00:00Z", podium: [
+      { user_id: "a", team: "Alfa", avatar_url: null, points: 40, rank: 1 }, { user_id: "b", team: "Beta", avatar_url: null, points: 31, rank: 2 }] };
+    render(<ActivityFeed now={new Date("2026-11-16T12:00:00Z")} rows={[row({ id: 1, kind: "signed", created_at: "2026-11-15T09:00:00Z" })]} jornadas={[jornada]} />);
+    expect(host.querySelector(".feed-card-jornada")?.textContent).toContain("Jornada cerrada · 9 – 15 nov");
+    expect(Array.from(host.querySelectorAll(".podium li")).map((li) => li.textContent)).toEqual(["1AAlfa40 pts", "2BBeta31 pts"]);
+    expect(host.querySelector(".feed-card-jornada a")?.getAttribute("href")).toBe("/jornada?semana=2026-11-09");
+    expect(host.querySelectorAll(".feed-card")).toHaveLength(2);
+  });
+});
+
 describe("ActivityFeed", () => {
   test("splits the feed into days with a Hoy / Ayer separator, newest first", () => {
     render(<ActivityFeed now={NOW} rows={[row({ id: 3, kind: "signed" }), row({ id: 2, kind: "sold", created_at: "2026-11-15T05:30:00Z" }), row({ id: 1, kind: "signed", created_at: "2026-11-14T10:00:00Z" })]} />);
