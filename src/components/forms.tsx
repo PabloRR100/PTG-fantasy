@@ -45,7 +45,7 @@ export function LineupForm({ squad, starters }: { squad: LineupPlayer[]; starter
               <label key={p.id} className={`player ${on ? "is-starter" : ""}`}>
                 <input type="checkbox" checked={on} onChange={() => setSelected(toggleStarter(selected, p.id, squad))} />
                 {on && <input type="hidden" name="player" value={p.id} />}
-                {level.colors.length > 1 && <span className={`chip color-${p.color}`}>{p.color}</span>}
+                {level.colors.length > 1 && <span className={`chip chip-fixed color-${p.color}`}>{p.color}</span>}
                 <span className="player-name">{p.name}</span>
                 <span className="player-meta">{formatMoney(p.value)}</span>
                 <span className="player-points" title="Puntos en el ciclo actual">{p.cyclePoints} pts</span>
