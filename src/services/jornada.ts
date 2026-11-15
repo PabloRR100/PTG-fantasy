@@ -110,7 +110,7 @@ export type JornadaEntry = {
 };
 
 /** A closed jornada as a Tablón card, dated when the week ended (Monday 06:00 Madrid), as Betcomm's matchday summary. */
-export type JornadaFeedRow = { kind: "jornada"; id: string; weekStart: string; created_at: string; entries: JornadaEntry[] };
+export type JornadaFeedRow = { kind: "jornada"; id: string; weekStart: string; created_at: string; entries: JornadaEntry[]; /** The week is still running: points and positions can change. */ live: boolean };
 
 /** Overall rank of every team counting only weeks up to and including `lastWeek` (equal totals share a rank). */
 function overallRanks(teams: TeamRow[], rows: CyclePointsRow[], lastWeek: string | null): Map<string, number> {
@@ -119,23 +119,27 @@ function overallRanks(teams: TeamRow[], rows: CyclePointsRow[], lastWeek: string
   return new Map(totals.map((t) => [t.id, totals.findIndex((x) => x.total === t.total) + 1]));
 }
 
+/**
+ * Cards for the Tablón: the running week (live, dated `now` so it sits under "Hoy") and the last closed weeks
+ * (dated when they ended). A week without any points gets no card.
+ */
 export function jornadaFeedRows(
-  teams: TeamRow[], rows: CyclePointsRow[], currentCycleDate: string, endOfWeek: (weekStart: string) => Date, limit = 6,
+  teams: TeamRow[], rows: CyclePointsRow[], currentCycleDate: string, endOfWeek: (weekStart: string) => Date, now: Date, limit = 6,
 ): JornadaFeedRow[] {
   const current = weekStartFor(currentCycleDate);
-  const allWeeks = [...new Set(rows.map((r) => weekStartFor(r.cycle_date)))].sort();
-  const closed = allWeeks.filter((w) => w < current).reverse().slice(0, limit);
-  return closed.flatMap((weekStart) => {
+  const allWeeks = [...new Set([...rows.map((r) => weekStartFor(r.cycle_date)), current])].sort();
+  const shown = allWeeks.filter((w) => w <= current).reverse().slice(0, limit + 1);
+  return shown.flatMap((weekStart) => {
     const ranked = weekRanking(teams, rows, weekStart);
     if (ranked.every((r) => r.points === 0)) return [];
     const before = allWeeks.filter((w) => w < weekStart).pop() ?? null;
-    const now = overallRanks(teams, rows, weekStart);
-    const was = overallRanks(teams, rows, before);
+    const after = overallRanks(teams, rows, weekStart);
+    const prior = overallRanks(teams, rows, before);
     const entries = ranked.map((r) => ({
       user_id: r.user_id, team: r.team_name, avatar_url: r.avatar_url ?? null, points: r.points, rank: r.rank,
-      overallRank: now.get(r.user_id) ?? 0, delta: before === null ? 0 : (was.get(r.user_id) ?? 0) - (now.get(r.user_id) ?? 0),
+      overallRank: after.get(r.user_id) ?? 0, delta: before === null ? 0 : (prior.get(r.user_id) ?? 0) - (after.get(r.user_id) ?? 0),
     }));
-    return [{ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at: endOfWeek(weekStart).toISOString(), entries }];
+    return [{ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at: (weekStart === current ? now : endOfWeek(weekStart)).toISOString(), entries, live: weekStart === current }];
   });
 }
 

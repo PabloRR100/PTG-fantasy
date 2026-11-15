@@ -30,7 +30,7 @@ export function JornadaCard({ row, timeLabel, defaultOpen = false }: { row: Jorn
           <span className="jornada-title">
             <span className="jornada-round">Jornada {jornadaLabel(row.weekStart)}</span>
             {" - "}
-            <span className="jornada-kicker">Clasificación</span>
+            <span className="jornada-kicker">{row.live ? "Clasificación · en curso" : "Clasificación"}</span>
             <time className="jornada-time" dateTime={row.created_at}>{timeLabel}</time>
           </span>
           <span className={`jornada-chevron${open ? " is-open" : ""}`} aria-hidden="true">▼</span>

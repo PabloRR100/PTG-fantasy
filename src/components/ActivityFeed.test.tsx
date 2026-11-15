@@ -19,9 +19,19 @@ beforeEach(() => { host = document.createElement("div"); document.body.append(ho
 afterEach(() => { act(() => root.unmount()); host.remove(); });
 const render = (node: React.ReactNode) => act(() => root.render(node));
 
+describe("ActivityFeed running jornada", () => {
+  test("labels the running week as in progress", () => {
+    const live = { kind: "jornada" as const, id: "jornada-2026-11-09", weekStart: "2026-11-09", created_at: "2026-11-12T09:00:00Z", live: true, entries: [
+      { user_id: "a", team: "Alfa", avatar_url: null, points: 12, rank: 1, overallRank: 1, delta: 0 }] };
+    render(<ActivityFeed now={new Date("2026-11-12T10:00:00Z")} rows={[]} jornadas={[live]} />);
+    expect(host.querySelector(".jornada-kicker")?.textContent).toBe("Clasificación · en curso");
+    expect(host.querySelector(".day-separator")?.textContent).toBe("Hoy");
+  });
+});
+
 describe("ActivityFeed jornada card", () => {
   const e = (user_id: string, team: string, points: number, rank: number, overallRank: number, delta: number) => ({ user_id, team, avatar_url: null, points, rank, overallRank, delta });
-  const jornada = (weekStart: string, created_at: string) => ({ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at, entries: [
+  const jornada = (weekStart: string, created_at: string) => ({ kind: "jornada" as const, id: `jornada-${weekStart}`, weekStart, created_at, live: false, entries: [
     e("a", "Alfa", 40, 1, 2, -1), e("b", "Beta", 31, 2, 1, 1), e("c", "Gama", 20, 3, 3, 0), e("d", "Delta", 0, 4, 4, 0)] });
 
   test("the newest jornada opens with the whole table, each row with points, overall rank and movement", () => {

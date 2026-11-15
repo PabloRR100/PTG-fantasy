@@ -183,13 +183,13 @@ export async function getNotificationPrefs(db: SupabaseClient, userId: string): 
   return row ? { bids: row.bids, market: row.market } : DEFAULT_PREFS;
 }
 
-/** The Tablón's closed-jornada cards: the podium of each finished week, from the same points the standings use. */
+/** The Tablón's jornada cards: the running week and the last finished ones, from the same points the standings use. */
 export async function getJornadaFeed(db: SupabaseClient, now = new Date()): Promise<JornadaFeedRow[]> {
   const [teams, rows] = await Promise.all([
     db.from("profiles").select("user_id, team_name, avatar_url").then((r) => unwrap<TeamRow[]>(r, "load teams")),
     db.from("manager_cycle_points").select("user_id, cycle_date, points").then((r) => unwrap<CyclePointsRow[]>(r, "load points")),
   ]);
-  return jornadaFeedRows(teams, rows, cycleDateFor(now), (weekStart) => cycleBoundsFor(new Date(`${weekStart}T12:00:00Z`)).end, 6);
+  return jornadaFeedRows(teams, rows, cycleDateFor(now), (weekStart) => cycleBoundsFor(new Date(`${weekStart}T12:00:00Z`)).end, now, 6);
 }
 
 export type JornadaView = { weeks: string[]; weekStart: string; ranking: WeekRank[] };
