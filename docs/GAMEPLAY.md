@@ -68,7 +68,12 @@ Open question: if one color dominates the market anyway, add a per-color factor 
 - Each day, a set of free players (owned by nobody) is listed for 24 hours, plus any player a manager puts up for sale.
 - A manager places a bid on a listed player, not above their current available budget.
 - At 06:00 the highest bid wins. **Tie: the earliest bid wins.** Winning bids are charged then; a winner who cannot pay any longer loses that player to the next bid.
-- A manager can sell a player to the market at once for the current market value.
+- A manager can sell a player to the market at once for the current market value. A manager must keep at least 2 players of
+  each color (otherwise no valid lineup exists). Selling a starter promotes the best bench player of that color.
+- **Minimum bid is the player's current market value** (the usual Biwenger rule; added during implementation).
+- A manager may bid on several players at once with amounts that add up to more than their budget; each bid must fit the
+  budget on its own when placed, and bids are paid in order at 06:00 until the money runs out.
+- Every open listing ends at the 06:00 close, and the same close opens the next day's market: 3 random free players per color.
 
 ## 7. Market value (Proposal)
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -27,13 +28,14 @@ function LoginForm() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "20vh auto", padding: 24, textAlign: "center" }}>
-      <h1>PTG Fantasy</h1>
-      <p>Fantasy de la liga de pádel de Padel Team Gourmet.</p>
-      <button onClick={signInWithGoogle} disabled={busy} style={{ padding: "12px 20px", fontSize: 16 }}>
+    <main className="page narrow auth-card">
+      <Image src="/brand/icon-192.png" alt="" width={96} height={96} className="auth-logo" priority />
+      <h1>Padel Fantasy</h1>
+      <p>Fantasy de pádel: ficha jugadores reales, alinéalos y compite con tus amigos.</p>
+      <button onClick={signInWithGoogle} disabled={busy}>
         {busy ? "Abriendo Google…" : "Entrar con Google"}
       </button>
-      {failed && <p role="alert">No pudimos iniciar sesión. Inténtalo de nuevo.</p>}
+      {failed && <p role="alert" className="msg msg-error">No pudimos iniciar sesión. Inténtalo de nuevo.</p>}
     </main>
   );
 }

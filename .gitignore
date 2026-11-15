@@ -11,3 +11,6 @@ next-env.d.ts
 # Scratch data a number or decision rests on lives here, never in a worktree.
 tmp/
 .superpowers/
+.env*
+# Supabase CLI link state (project ref, pooler host): local only.
+supabase/.temp/
