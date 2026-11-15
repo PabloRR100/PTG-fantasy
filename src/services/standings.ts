@@ -1,6 +1,6 @@
-export type TeamRow = { user_id: string; team_name: string };
+export type TeamRow = { user_id: string; team_name: string; avatar_url?: string | null };
 export type CyclePointsRow = { user_id: string; cycle_date: string; points: number };
-export type StandingRow = TeamRow & { total: number; week: number; rank: number };
+export type StandingRow = TeamRow & { total: number; week: number; rank: number; teamValue: number; avatar_url: string | null };
 
 /** The Monday (YYYY-MM-DD) of the week a cycle date falls in. Weeks run Monday to Sunday. */
 export function weekStartFor(cycleDate: string): string {
@@ -11,12 +11,14 @@ export function weekStartFor(cycleDate: string): string {
 }
 
 /** League table: total points and the current week's, ranked; equal totals share a rank. */
-export function buildStandings(teams: TeamRow[], rows: CyclePointsRow[], currentCycleDate: string): StandingRow[] {
+export function buildStandings(teams: TeamRow[], rows: CyclePointsRow[], currentCycleDate: string, teamValues: Map<string, number> = new Map()): StandingRow[] {
   const weekStart = weekStartFor(currentCycleDate);
   const entries = teams.map((team) => {
     const mine = rows.filter((r) => r.user_id === team.user_id);
     return {
       ...team,
+      teamValue: teamValues.get(team.user_id) ?? 0,
+      avatar_url: team.avatar_url ?? null,
       total: mine.reduce((sum, r) => sum + r.points, 0),
       week: mine.filter((r) => weekStartFor(r.cycle_date) === weekStart).reduce((sum, r) => sum + r.points, 0),
     };

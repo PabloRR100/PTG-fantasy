@@ -102,7 +102,7 @@ describe("Drawer", () => {
     render();
     const links = Array.from($("#game-menu").querySelectorAll("a")).map((a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
-      ["Equipo", "/equipo"], ["Mercado", "/mercado"], ["Jugadores", "/jugadores"], ["Clasificación", "/clasificacion"], ["Normas de juego", "/normas"],
+      ["Tablón", "/tablon"], ["Buzón", "/buzon"], ["Equipo", "/equipo"], ["Mercado", "/mercado"], ["Jugadores", "/jugadores"], ["Clasificación", "/clasificacion"], ["Normas de juego", "/normas"], ["Ajustes", "/ajustes"],
     ]);
     expect($('a[aria-current="page"]').textContent).toBe("Equipo");
   });

@@ -33,32 +33,32 @@ describe("how many players the daily market opens per color", () => {
   test.each([[0], [1], [2], [3]])("with %i registered team(s) it opens the minimum of 3 per color", async (teams) => {
     await managers(teams);
     await close();
-    expect(await openPerColor()).toEqual([3, 3, 3, 3]);
+    expect(await openPerColor()).toEqual(COLORS.map(() => 3));
   });
 
   test.each([[4], [5]])("with %i teams it opens one per team per color", async (teams) => {
     await managers(teams);
     await close();
-    expect(await openPerColor()).toEqual([teams, teams, teams, teams]);
+    expect(await openPerColor()).toEqual(COLORS.map(() => teams));
   });
 
   test("a signed-up user with no team yet does not count", async () => {
     await managers(3);
     await addUser(db);
     await close();
-    expect(await openPerColor()).toEqual([3, 3, 3, 3]);
+    expect(await openPerColor()).toEqual(COLORS.map(() => 3));
   });
 
   test("it grows from one day to the next as teams register, and never lists an owned player", async () => {
     await managers(3);
     await close(DAY1);
-    expect(await openPerColor()).toEqual([3, 3, 3, 3]);
+    expect(await openPerColor()).toEqual(COLORS.map(() => 3));
 
     await managers(2); // two more teams sign up during the day
-    expect(await openPerColor()).toEqual([3, 3, 3, 3]); // today's round is not touched by sign-ups
+    expect(await openPerColor()).toEqual(COLORS.map(() => 3)); // today's round is not touched by sign-ups
 
     await close(DAY2);
-    expect(await openPerColor()).toEqual([5, 5, 5, 5]);
+    expect(await openPerColor()).toEqual(COLORS.map(() => 5));
     expect(await q("select 1 from market_listings l join squads s on s.player_id = l.player_id where l.status = 'open'")).toEqual([]);
     expect(await q("select player_id from market_listings where status = 'open' group by 1 having count(*) > 1")).toEqual([]);
   });
@@ -70,7 +70,8 @@ describe("limited to the free players that exist", () => {
     await seedPlayers(db, 14); // 4 teams own 12 per color, leaving 2 free
     await managers(4);
     await close();
-    expect(await openPerColor()).toEqual([2, 2, 2, 2]);
+    // Azul and Blanco share their squad places, so together they have more free players than the other levels.
+    expect(await openPerColor()).toEqual([4, 4, ...COLORS.slice(2).map(() => 2)]);
     expect(await q("select 1 from market_listings l join squads s on s.player_id = l.player_id")).toEqual([]);
   });
 });
@@ -78,7 +79,7 @@ describe("limited to the free players that exist", () => {
 describe("rolling the rule out", () => {
   test("applying the migration leaves the round that is already open exactly as it is", async () => {
     db = await freshDb({ stopBefore: "0005" });
-    await seedPlayers(db, 24);
+    await seedPlayers(db, 24, COLORS.slice(0, 4)); // the schema before 0009 knows four colors
     await managers(2);
     await close(DAY1); // today's round, opened by the previous rule
     const snapshot = async () => ({
@@ -88,7 +89,7 @@ describe("rolling the rule out", () => {
       budgets: await q("select user_id, budget from profiles order by user_id"),
     });
     const before = await snapshot();
-    expect(before.listings).toHaveLength(12);
+    expect(before.listings).toHaveLength(12); // 3 per color, four colors
 
     const migration = readFileSync(new URL("../migrations/0005_market_size.sql", import.meta.url), "utf8");
     await db.exec(migration);
@@ -96,7 +97,7 @@ describe("rolling the rule out", () => {
 
     await managers(2); // 4 teams now
     await close(DAY2);
-    expect(await openPerColor()).toEqual([4, 4, 4, 4]);
+    expect((await openPerColor()).slice(0, 4)).toEqual([4, 4, 4, 4]); // the schema at that point has four colors
   });
 
   test("the helper and close_cycle stay out of reach of the API roles", async () => {

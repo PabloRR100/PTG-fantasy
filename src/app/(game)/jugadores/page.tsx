@@ -2,7 +2,7 @@ import { PlayersTable } from "@/components/PlayersTable";
 import { requireManager } from "@/lib/session";
 import { getPlayerDirectory } from "@/services/game-data";
 
-export const metadata = { title: "Jugadores · PTG Fantasy" };
+export const metadata = { title: "Jugadores · Padel Fantasy" };
 
 export default async function JugadoresPage() {
   const { db } = await requireManager();

@@ -20,25 +20,28 @@ const SUPABASE_STUBS = `
   alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 `;
 
-export const COLORS = ["Blanco", "Azul", "Verde", "Rosa"] as const;
+/** Levels the squad and lineup rules count by: Azul and Blanco are one (game_colors.group_name, 0012). */
+export const LEVELS = 9;
+export const COLORS = ["Blanco", "Azul", "Verde", "Rosa", "Oro", "Granate", "Morado", "Marrón", "Plata", "Naranja"] as const;
 
 /**
  * A throwaway Postgres with every migration applied, in file order.
- * `stopBefore` ("0005") leaves out that migration and later ones, to test an upgrade from the previous state.
+ * `stopBefore` ("0005") leaves out that migration and later ones, to test an upgrade from the previous state;
+ * `except` (["0006"]) leaves out migrations by number prefix, to rebuild a database that skipped them.
  */
-export async function freshDb(options: { stopBefore?: string } = {}): Promise<PGlite> {
+export async function freshDb(options: { stopBefore?: string; except?: string[] } = {}): Promise<PGlite> {
   const db = new PGlite();
   await db.exec(SUPABASE_STUBS);
   const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
-  for (const file of files.filter((f) => !options.stopBefore || f < options.stopBefore)) {
+  for (const file of files.filter((f) => (!options.stopBefore || f < options.stopBefore) && !options.except?.some((x) => f.startsWith(x)))) {
     await db.exec(readFileSync(`${MIGRATIONS_DIR}${file}`, "utf8"));
   }
   return db;
 }
 
-/** `perColor` players in each of the four colors; values fall with the index so "best" is well defined. */
-export async function seedPlayers(db: PGlite, perColor = 8): Promise<void> {
-  for (const color of COLORS) {
+/** `perColor` players in each of the ten colors; values fall with the index so "best" is well defined. */
+export async function seedPlayers(db: PGlite, perColor = 8, colors: readonly string[] = COLORS): Promise<void> {
+  for (const color of colors) {
     for (let i = 0; i < perColor; i++) {
       await db.query(
         `insert into players (ptg_player_id, display_name, color, group_id, matches_played, ratio, value)

@@ -1,10 +1,18 @@
-export type Color = "Blanco" | "Azul" | "Verde" | "Rosa";
+import type { Color } from "@/services/lineup";
+
+export type { Color };
 
 const BASE_VALUE: Record<Color, number> = {
   Blanco: 2_000_000,
   Azul: 1_500_000,
   Verde: 1_000_000,
   Rosa: 700_000,
+  Oro: 600_000,
+  Granate: 500_000,
+  Morado: 450_000,
+  Marrón: 400_000,
+  Plata: 350_000,
+  Naranja: 300_000,
 };
 
 const MAX_DAILY_MOVE = 0.1;

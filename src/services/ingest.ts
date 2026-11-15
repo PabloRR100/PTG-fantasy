@@ -1,12 +1,14 @@
 import { initialValue, type Color } from "@/services/valuation";
 import { scoreMatch, type SetResult } from "@/services/scoring";
-import type { ParsedMatch, ParsedPlayer, RankedPlayer } from "@/lib/ptg/types";
+import type { ParsedMatch, ParsedPlayer } from "@/lib/ptg/types";
+import type { Gender, LoadablePlayer } from "@/services/levels";
 
 export type PlayerPayload = {
   ptg_player_id: string;
   display_name: string;
   color: Color;
   group_id: string;
+  gender: Gender;
   matches_played: number;
   ratio: number;
   value: number;
@@ -26,15 +28,17 @@ export type Rpc = (
   args: Record<string, unknown>,
 ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
 
-export function buildPlayersPayload(ranking: RankedPlayer[], color: Color, groupId: string): PlayerPayload[] {
-  return ranking.map((r) => ({
+/** Players already placed in a level by resolveLevels (src/services/levels.ts), ready for the ingest_players RPC. */
+export function buildPlayersPayload(players: LoadablePlayer[]): PlayerPayload[] {
+  return players.map((r) => ({
     ptg_player_id: r.ptgPlayerId,
     display_name: r.displayName,
-    color,
-    group_id: groupId,
+    color: r.color,
+    group_id: r.groupId,
+    gender: r.gender,
     matches_played: r.matchesPlayed,
     ratio: r.ratio,
-    value: initialValue({ color, ratio: r.ratio, matchesPlayed: r.matchesPlayed }),
+    value: initialValue({ color: r.color, ratio: r.ratio, matchesPlayed: r.matchesPlayed }),
   }));
 }
 

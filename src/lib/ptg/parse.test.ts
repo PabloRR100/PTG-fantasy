@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { madridToInstant } from "@/lib/madrid-time";
 import { parseMatchPage } from "@/lib/ptg/parse-match";
-import { parseRanking } from "@/lib/ptg/parse-ranking";
+import { parseRanking, parseRankingMeta } from "@/lib/ptg/parse-ranking";
 import { parseResultsList } from "@/lib/ptg/parse-results";
 
 const fixture = (name: string) =>
@@ -72,9 +72,51 @@ describe("parseRanking", () => {
       { ptgPlayerId: "55555555-5555-4555-8555-555555555555", displayName: "Gina", matchesPlayed: 1, ratio: 1 },
     ]);
   });
+  test("a player with no matches yet shows '0/1' and a dash instead of a ratio: ratio 0", () => {
+    const noMatches =
+      '<main><a data-cta-id="ranking_to_player_profile" href="/perfil/66666666-6666-4666-8666-666666666666"><span><span>—</span><span>Sin posición</span></span><span><div><img/></div></span><div><p><span>Hugo</span><span>Hugo</span></p></div><div><span>0<span>/<!-- -->1</span></span></div><div><div><span>—<span>%</span></span></div></div></a></main>';
+    expect(parseRanking(noMatches)).toEqual([
+      { ptgPlayerId: "66666666-6666-4666-8666-666666666666", displayName: "Hugo", matchesPlayed: 0, ratio: 0 },
+    ]);
+  });
+  test("a dash ratio on a player who has played still fails loudly", () => {
+    const odd =
+      '<main><a data-cta-id="ranking_to_player_profile" href="/perfil/77777777-7777-4777-8777-777777777777"><span>2</span><div><p><span>Iker</span><span>Iker</span></p></div><span>9</span><div><span>—<span>%</span></span></div></a></main>';
+    expect(() => parseRanking(odd)).toThrow(/win ratio/);
+  });
   test("a non-numeric matches count fails loudly", () => {
     const broken = fixture("ranking-sample.html").replaceAll("<span>54</span>", "<span>n/a</span>");
     expect(() => parseRanking(broken)).toThrow(/matches played not found/);
+  });
+});
+
+describe("parseRankingMeta", () => {
+  // Shaped after PTG's live filter bar (checked against the saved 1S27 pages): the selected chip carries bg-court.
+  const chip = (cta: string, label: string, selected: boolean, extra = "") =>
+    `<button type="button" class="chip ${selected ? "bg-court text-paper" : "bg-paper"}" data-cta-id="ranking_all_scope_${cta}">${label}${extra}</button>`;
+  const page = (period: string, gender: string, level: string) =>
+    `<main>${chip("period", "Histórico", false)}${chip("period", "1S27", period === "1S27", '<span class="text-label">En curso</span>')}${chip("period", "2S26", period === "2S26")}` +
+    `${chip("gender", "Femenino", gender === "Femenino")}${chip("gender", "Masculino", gender === "Masculino")}` +
+    `${chip("level", "Blanco", level === "Blanco")}${chip("level", "Azul", level === "Azul")}` +
+    `<a href="/ranking/resultados?ciudad=c1&amp;genero=male&amp;nivel=Azul&amp;grupo=02fc6968-c20c-b113-950d-e428c888fb82">Resultados</a></main>`;
+
+  test("reads the selected semester, gender, level and the group id of the page", () => {
+    expect(parseRankingMeta(page("1S27", "Masculino", "Azul"))).toEqual({
+      season: "1S27",
+      seasonIsCurrent: true,
+      gender: "male",
+      level: "Azul",
+      groupId: "02fc6968-c20c-b113-950d-e428c888fb82",
+    });
+  });
+  test("a past semester is not current", () => {
+    expect(parseRankingMeta(page("2S26", "Femenino", "Blanco"))).toMatchObject({ season: "2S26", seasonIsCurrent: false, gender: "female" });
+  });
+  test("a page without a selected semester fails loudly", () => {
+    expect(() => parseRankingMeta(page("none", "Masculino", "Azul"))).toThrow(/semester/);
+  });
+  test("a page without a results link (no group id) fails loudly", () => {
+    expect(() => parseRankingMeta(page("1S27", "Masculino", "Azul").replace(/<a href.*<\/a>/, ""))).toThrow(/group id/);
   });
 });
 

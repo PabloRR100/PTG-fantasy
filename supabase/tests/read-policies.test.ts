@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { addUser, asUser, freshDb, seedPlayers } from "./db";
+import { addUser, asUser, COLORS, LEVELS, freshDb, seedPlayers } from "./db";
 
 // What the Jugadores page reads: players, squads (owner ids) and profiles (team names). It renders only
 // profiles.team_name; these tests pin what the API lets a signed-in user, and a visitor, read.
@@ -23,8 +23,8 @@ describe("read access", () => {
       squads: (await q<{ n: number }>("select count(*)::int n from squads"))[0].n,
       teams: await q<{ team_name: string }>("select team_name from profiles"),
     }));
-    expect(rows.players).toBe(32);
-    expect(rows.squads).toBe(12);
+    expect(rows.players).toBe(8 * COLORS.length);
+    expect(rows.squads).toBe(3 * LEVELS);
     expect(rows.teams).toEqual([{ team_name: "Los Pepros" }]);
   });
 
@@ -53,7 +53,7 @@ describe("read access", () => {
     const cols = await q<{ column_name: string }>(
       "select column_name from information_schema.columns where table_schema = 'public' and table_name = 'profiles' order by column_name",
     );
-    expect(cols.map((c) => c.column_name)).toEqual(["budget", "created_at", "is_admin", "team_name", "user_id"]);
+    expect(cols.map((c) => c.column_name)).toEqual(["avatar_url", "budget", "created_at", "is_admin", "team_name", "user_id"]);
   });
 
   test("a signed-in user cannot change team names, owners or values by writing the tables directly", async () => {

@@ -29,9 +29,9 @@ function LoginForm() {
 
   return (
     <main className="page narrow auth-card">
-      <Image src="/brand/ptg-icon-192.png" alt="PTG" width={96} height={96} className="auth-logo" priority />
-      <h1>PTG Fantasy</h1>
-      <p>Fantasy de la liga de pádel de Padel Team Gourmet.</p>
+      <Image src="/brand/icon-192.png" alt="" width={96} height={96} className="auth-logo" priority />
+      <h1>Padel Fantasy</h1>
+      <p>Fantasy de pádel: ficha jugadores reales, alinéalos y compite con tus amigos.</p>
       <button onClick={signInWithGoogle} disabled={busy}>
         {busy ? "Abriendo Google…" : "Entrar con Google"}
       </button>

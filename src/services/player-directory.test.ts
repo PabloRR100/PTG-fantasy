@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { FREE, filterAndSort, ownerOptions, type DirectoryRow, type DirectoryView } from "@/services/player-directory";
+import { FREE, colorLabel, filterAndSort, ownerOptions, type DirectoryRow, type DirectoryView } from "@/services/player-directory";
 
 const row = (r: Pick<DirectoryRow, "id" | "name" | "color" | "value" | "owner"> & Partial<DirectoryRow>): DirectoryRow => ({
-  matches: 0, winRate: 0, called: 0, points: 0, average: null, ...r,
+  gender: "male", matches: 0, winRate: 0, called: 0, points: 0, average: null, trend: null, ...r,
 });
 const rows: DirectoryRow[] = [
   row({ id: "1", name: "Kike", color: "Blanco", value: 2_000_000, owner: "Los Pepros", matches: 280, winRate: 0.55, called: 4, points: 40, average: 5 }),
@@ -13,7 +13,7 @@ const rows: DirectoryRow[] = [
   row({ id: "6", name: "Zoilo", color: "Rosa", value: 250_000, owner: "Gamma", matches: 90, winRate: 0.5, called: 3, points: 9, average: 4.5 }),
 ];
 const view = (v: Partial<DirectoryView> = {}): DirectoryView => ({
-  query: "", colors: [], owner: null, minValue: null, maxValue: null, sortKey: "value", sortDir: "desc", ...v,
+  query: "", gender: null, colors: [], owner: null, minValue: null, maxValue: null, sortKey: "value", sortDir: "desc", ...v,
 });
 const names = (v: Partial<DirectoryView>) => filterAndSort(rows, view(v)).map((r) => `${r.name}/${r.color}`);
 
@@ -30,8 +30,8 @@ describe("search", () => {
 });
 
 describe("filters", () => {
-  test("by one color", () => expect(names({ colors: ["Rosa"], sortKey: "name", sortDir: "asc" })).toEqual(["Mario/Rosa", "Zoilo/Rosa"]));
-  test("by several colors", () => expect(names({ colors: ["Azul", "Verde"] })).toEqual(["Mario/Verde", "Edu Laviña/Azul"].reverse()));
+  test("by one color", () => expect(names({ colors: [{ color: "Rosa" }], sortKey: "name", sortDir: "asc" })).toEqual(["Mario/Rosa", "Zoilo/Rosa"]));
+  test("by several colors", () => expect(names({ colors: [{ color: "Azul" }, { color: "Verde" }] })).toEqual(["Mario/Verde", "Edu Laviña/Azul"].reverse()));
   test("by owner", () => expect(names({ owner: "Gamma" })).toEqual(["Edu Laviña/Azul", "Zoilo/Rosa"]));
   test("Libre shows only players nobody owns", () => expect(names({ owner: FREE })).toEqual(["Álvaro Born/Blanco", "Mario/Verde"]));
   test("a team called like the Libre marker is not confused with free players", () => {
@@ -43,10 +43,10 @@ describe("filters", () => {
   test("maximum value is inclusive", () => expect(names({ maxValue: 300_000 })).toEqual(["Mario/Rosa", "Zoilo/Rosa"]));
   test("a range", () => expect(names({ minValue: 900_000, maxValue: 1_700_000 })).toEqual(["Álvaro Born/Blanco", "Edu Laviña/Azul", "Mario/Verde"]));
   test("a minimum above the maximum matches nobody", () => expect(names({ minValue: 2_000_000, maxValue: 1_000_000 })).toEqual([]));
-  test("filters combine", () => expect(names({ colors: ["Blanco", "Rosa"], owner: FREE, query: "a" })).toEqual(["Álvaro Born/Blanco"]));
+  test("filters combine", () => expect(names({ colors: [{ color: "Blanco" }, { color: "Rosa" }], owner: FREE, query: "a" })).toEqual(["Álvaro Born/Blanco"]));
   test("does not change the input list", () => {
     const copy = JSON.stringify(rows);
-    filterAndSort(rows, view({ colors: ["Rosa"] }));
+    filterAndSort(rows, view({ colors: [{ color: "Rosa" }] }));
     expect(JSON.stringify(rows)).toBe(copy);
   });
 });
@@ -97,5 +97,41 @@ describe("sorting by the player statistics", () => {
 describe("ownerOptions", () => {
   test("distinct team names alphabetically, only teams that own someone", () => {
     expect(ownerOptions(rows)).toEqual(["Gamma", "Los Pepros"]);
+  });
+});
+
+describe("category (gender) and color together", () => {
+  const mixed = [
+    row({ id: "m1", name: "Aitor", color: "Azul", value: 900, owner: null, gender: "male" }),
+    row({ id: "f1", name: "Marta", color: "Azul", value: 800, owner: null, gender: "female" }),
+    row({ id: "m2", name: "Beto", color: "Rosa", value: 700, owner: null, gender: "male" }),
+    row({ id: "f2", name: "Nuria", color: "Rosa", value: 600, owner: null, gender: "female" }),
+  ];
+  const ids = (v: Partial<DirectoryView>) => filterAndSort(mixed, view(v)).map((r) => r.id);
+
+  test("Todos (null) keeps both categories", () => expect(ids({})).toEqual(["m1", "f1", "m2", "f2"]));
+  test("Masculino / Femenino keep only that category", () => {
+    expect(ids({ gender: "male" })).toEqual(["m1", "m2"]);
+    expect(ids({ gender: "female" })).toEqual(["f1", "f2"]);
+  });
+  test("a color choice without category matches the color in both categories", () => expect(ids({ colors: [{ color: "Azul" }] })).toEqual(["m1", "f1"]));
+  test("a color choice with a category matches only that variant: Azul · Femenino is not Azul · Masculino", () => {
+    expect(ids({ colors: [{ color: "Azul", gender: "female" }] })).toEqual(["f1"]);
+    expect(ids({ colors: [{ color: "Azul", gender: "female" }, { color: "Rosa", gender: "male" }] })).toEqual(["f1", "m2"]);
+  });
+  test("category and color combine (both must hold)", () => {
+    expect(ids({ gender: "female", colors: [{ color: "Rosa" }] })).toEqual(["f2"]);
+    expect(ids({ gender: "male", colors: [{ color: "Azul", gender: "female" }] })).toEqual([]);
+  });
+  test("sorting by color keeps the two categories of a color apart, men first", () => {
+    expect(ids({ sortKey: "color", sortDir: "asc" })).toEqual(["m1", "f1", "m2", "f2"]);
+  });
+});
+
+describe("colorLabel", () => {
+  test("adds the category only when both are on screen", () => {
+    expect(colorLabel({ color: "Azul", gender: "female" }, true)).toBe("Azul · Femenino");
+    expect(colorLabel({ color: "Azul", gender: "male" }, true)).toBe("Azul · Masculino");
+    expect(colorLabel({ color: "Azul", gender: "female" }, false)).toBe("Azul");
   });
 });

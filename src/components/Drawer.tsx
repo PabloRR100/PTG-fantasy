@@ -4,27 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/actions";
-import { initialsOf } from "@/lib/avatar";
+import { Avatar } from "@/components/Avatar";
 
 type Props = { teamName: string; budget: string; avatarUrl: string | null; isAdmin: boolean };
 
 const FOCUSABLE = 'a[href], button:not([disabled])';
-
-/** Profile photo, or the team's initials when there is no photo or it fails to load. */
-function Avatar({ url, name, size }: { url: string | null; name: string; size: "sm" | "lg" }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <span className={`avatar avatar-${size}`}>
-      {url && !failed ? (
-        // referrerPolicy: Google's photo host rejects some cross-site referrers.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
-      ) : (
-        <span aria-hidden="true">{initialsOf(name)}</span>
-      )}
-    </span>
-  );
-}
 
 export function Drawer({ teamName, budget, avatarUrl, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
@@ -34,11 +18,14 @@ export function Drawer({ teamName, budget, avatarUrl, isAdmin }: Props) {
   const wasOpen = useRef(false);
 
   const links = [
+    { href: "/tablon", label: "Tablón" },
+    { href: "/buzon", label: "Buzón" },
     { href: "/equipo", label: "Equipo" },
     { href: "/mercado", label: "Mercado" },
     { href: "/jugadores", label: "Jugadores" },
     { href: "/clasificacion", label: "Clasificación" },
     { href: "/normas", label: "Normas de juego" },
+    { href: "/ajustes", label: "Ajustes" },
     ...(isAdmin ? [{ href: "/admin", label: "Administración" }] : []),
   ];
 

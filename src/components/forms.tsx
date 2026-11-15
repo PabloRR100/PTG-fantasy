@@ -5,7 +5,7 @@ import {
   closeMarket, createTeam, placeBid, saveLineup, sellPlayer, type ActionState,
 } from "@/app/actions";
 import { formatMoney } from "@/lib/format";
-import { COLORS, lineupProblem, toggleStarter, type Color, type SquadPlayer } from "@/services/lineup";
+import { LEVELS, levelOf, lineupProblem, toggleStarter, type Color, type SquadPlayer } from "@/services/lineup";
 
 const NONE: ActionState = {};
 
@@ -36,15 +36,16 @@ export function LineupForm({ squad, starters }: { squad: LineupPlayer[]; starter
 
   return (
     <form action={action} className="stack">
-      {COLORS.map((color) => (
-        <fieldset key={color} className={`color-group color-${color}`}>
-          <legend>{color}</legend>
-          {squad.filter((p) => p.color === color).map((p) => {
+      {LEVELS.map((level) => (
+        <fieldset key={level.name} className={`color-group color-${level.colors[0]}`}>
+          <legend>{level.name}</legend>
+          {squad.filter((p) => levelOf(p.color) === level.name).map((p) => {
             const on = selected.includes(p.id);
             return (
               <label key={p.id} className={`player ${on ? "is-starter" : ""}`}>
                 <input type="checkbox" checked={on} onChange={() => setSelected(toggleStarter(selected, p.id, squad))} />
                 {on && <input type="hidden" name="player" value={p.id} />}
+                {level.colors.length > 1 && <span className={`chip color-${p.color}`}>{p.color}</span>}
                 <span className="player-name">{p.name}</span>
                 <span className="player-meta">{formatMoney(p.value)}</span>
                 <span className="player-points" title="Puntos en el ciclo actual">{p.cyclePoints} pts</span>

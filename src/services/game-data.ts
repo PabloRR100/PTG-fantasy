@@ -3,13 +3,17 @@ import { cycleBoundsFor, cycleDateFor } from "@/services/cycles";
 import { buildStandings, type CyclePointsRow, type StandingRow, type TeamRow } from "@/services/standings";
 import type { Color } from "@/services/lineup";
 import { fetchAllPages } from "@/lib/paginate";
-import type { DirectoryRow } from "@/services/player-directory";
+import { DEFAULT_PREFS, type Prefs } from "@/services/notifications";
+import type { DirectoryRow, Gender } from "@/services/player-directory";
+import type { ActivityRow, InboxRow } from "@/services/feed";
+import { teamValues } from "@/services/team-value";
+import { formTrend, weeklyPointsByPlayer } from "@/services/form";
 import { buildPlayerStats, type MatchRow, type ResultRow, type SnapshotRow } from "@/services/player-stats";
 
 // Reads for the pages. Plain table reads joined here rather than PostgREST embeds, so each query is
 // one RLS-visible table and the join is ordinary, testable TypeScript. Writes go through RPCs only.
 
-export type Profile = { user_id: string; team_name: string; budget: number; is_admin: boolean };
+export type Profile = { user_id: string; team_name: string; budget: number; is_admin: boolean; avatar_url: string | null };
 export type PlayerRow = { id: string; display_name: string; color: Color; value: number; matches_played: number; ratio: number };
 export type SquadEntry = PlayerRow & { starter: boolean; cyclePoints: number };
 export type Listing = { id: string; closes_at: string; player: PlayerRow; myBid: number | null };
@@ -23,7 +27,7 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 }
 
 export async function getProfile(db: SupabaseClient, userId: string): Promise<Profile | null> {
-  const result = await db.from("profiles").select("user_id, team_name, budget, is_admin").eq("user_id", userId).maybeSingle();
+  const result = await db.from("profiles").select("user_id, team_name, budget, is_admin, avatar_url").eq("user_id", userId).maybeSingle();
   return unwrap<Profile | null>(result, "load profile");
 }
 
@@ -88,11 +92,14 @@ export async function getOpenListings(db: SupabaseClient, userId: string): Promi
 }
 
 export async function getStandings(db: SupabaseClient, now = new Date()): Promise<StandingRow[]> {
-  const [teams, rows] = await Promise.all([
-    db.from("profiles").select("user_id, team_name").then((r) => unwrap<TeamRow[]>(r, "load teams")),
+  const [teams, rows, squads, players] = await Promise.all([
+    db.from("profiles").select("user_id, team_name, avatar_url").then((r) => unwrap<TeamRow[]>(r, "load teams")),
     db.from("manager_cycle_points").select("user_id, cycle_date, points").then((r) => unwrap<CyclePointsRow[]>(r, "load standings")),
+    // Team value: squads and players are readable by every signed-in user (RLS), so no private data is involved.
+    fetchAllPages<{ player_id: string; user_id: string }>("load squads", (from, to) => db.from("squads").select("player_id, user_id").order("player_id").range(from, to)),
+    fetchAllPages<{ id: string; value: number }>("load player values", (from, to) => db.from("players").select("id, value").order("id").range(from, to)),
   ]);
-  return buildStandings(teams, rows, cycleDateFor(now));
+  return buildStandings(teams, rows, cycleDateFor(now), teamValues(squads, players));
 }
 
 /**
@@ -102,8 +109,8 @@ export async function getStandings(db: SupabaseClient, now = new Date()): Promis
  */
 export async function getPlayerDirectory(db: SupabaseClient): Promise<DirectoryRow[]> {
   const [players, squads, teams, matches, results, snapshots] = await Promise.all([
-    fetchAllPages<{ id: string; display_name: string; color: Color; value: number; matches_played: number; ratio: number }>(
-      "load players", (from, to) => db.from("players").select("id, display_name, color, value, matches_played, ratio").order("id").range(from, to)),
+    fetchAllPages<{ id: string; display_name: string; color: string; gender: Gender; value: number; matches_played: number; ratio: number }>(
+      "load players", (from, to) => db.from("players").select("id, display_name, color, gender, value, matches_played, ratio").eq("active", true).order("id").range(from, to)),
     fetchAllPages<{ player_id: string; user_id: string }>(
       "load owners", (from, to) => db.from("squads").select("player_id, user_id").order("player_id").range(from, to)),
     fetchAllPages<TeamRow>(
@@ -119,13 +126,58 @@ export async function getPlayerDirectory(db: SupabaseClient): Promise<DirectoryR
   const teamName = new Map(teams.map((t) => [t.user_id, t.team_name]));
   const ownerOf = new Map(squads.map((s) => [s.player_id, teamName.get(s.user_id) ?? null]));
   const stats = buildPlayerStats(matches, results, snapshots);
+  const weekly = weeklyPointsByPlayer(matches, results, new Date(), 4);
 
   return players.map((p) => {
     const s = stats.get(p.id);
     return {
-      id: p.id, name: p.display_name, color: p.color, value: p.value, owner: ownerOf.get(p.id) ?? null,
+      id: p.id, name: p.display_name, gender: p.gender, color: p.color, value: p.value, owner: ownerOf.get(p.id) ?? null,
       matches: p.matches_played, winRate: Number(p.ratio),
       called: s?.called ?? 0, points: s?.points ?? 0, average: s && s.played > 0 ? s.points / s.played : null,
+      trend: formTrend(weekly.get(p.id) ?? []),
     };
   });
+}
+
+/** The Tablón: the latest operations between teams and the market, newest first. Names come from tables everyone can read. */
+export async function getActivity(db: SupabaseClient, limit = 50): Promise<ActivityRow[]> {
+  const rows = unwrap<{ id: number; kind: ActivityRow["kind"]; user_id: string; player_id: string; amount: number; created_at: string }[]>(
+    await db.from("activity").select("id, kind, user_id, player_id, amount, created_at").order("id", { ascending: false }).limit(limit),
+    "load activity",
+  );
+  if (rows.length === 0) return [];
+  const [teams, players] = await Promise.all([
+    db.from("profiles").select("user_id, team_name, avatar_url").in("user_id", [...new Set(rows.map((r) => r.user_id))]).then((r) => unwrap<TeamRow[]>(r, "load teams")),
+    db.from("players").select("id, display_name, color, gender").in("id", [...new Set(rows.map((r) => r.player_id))]).then((r) =>
+      unwrap<{ id: string; display_name: string; color: Color; gender: Gender }[]>(r, "load activity players")),
+  ]);
+  const team = new Map(teams.map((t) => [t.user_id, t]));
+  const player = new Map(players.map((p) => [p.id, p]));
+  return rows.flatMap((r) => {
+    const p = player.get(r.player_id);
+    return p ? [{ id: r.id, kind: r.kind, team: team.get(r.user_id)?.team_name ?? null, avatar_url: team.get(r.user_id)?.avatar_url ?? null, player: p.display_name, color: p.color, gender: p.gender, amount: r.amount, created_at: r.created_at }] : [];
+  });
+}
+
+/** This manager's inbox, newest first. RLS limits it to their own rows; the filter states the intent. */
+export async function getInbox(db: SupabaseClient, userId: string, limit = 50): Promise<InboxRow[]> {
+  return unwrap<InboxRow[]>(
+    await db.from("notification_outbox").select("id, kind, data, created_at, read_at").eq("user_id", userId).order("id", { ascending: false }).limit(limit),
+    "load inbox",
+  );
+}
+
+export async function getUnreadCount(db: SupabaseClient, userId: string): Promise<number> {
+  const { count, error } = await db.from("notification_outbox").select("id", { count: "exact", head: true }).eq("user_id", userId).is("read_at", null);
+  if (error) throw new Error(`count unread: ${error.message}`);
+  return count ?? 0;
+}
+
+/** What this manager wants to be told about. No stored row means everything on. */
+export async function getNotificationPrefs(db: SupabaseClient, userId: string): Promise<Prefs> {
+  const row = unwrap<{ bids: boolean; market: boolean } | null>(
+    await db.from("notification_prefs").select("bids, market").eq("user_id", userId).maybeSingle(),
+    "load notification preferences",
+  );
+  return row ? { bids: row.bids, market: row.market } : DEFAULT_PREFS;
 }

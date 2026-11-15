@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { addUser, asUser, COLORS, freshDb, seedPlayers } from "./db";
+import { addUser, asUser, COLORS, LEVELS, freshDb, seedPlayers } from "./db";
 
 let db: PGlite;
 beforeEach(async () => {
@@ -13,21 +13,22 @@ const createManager = (user: string, team = "Los Pablos") =>
   asUser(db, user, () => db.query("select create_manager($1)", [team]));
 
 describe("create_manager", () => {
-  test("gives a profile with the starting budget, 12 players (3 per color) and 8 starters (2 per color)", async () => {
+  test("gives a profile with the starting budget, 3 players and 2 starters of every level (Azul and Blanco count as one)", async () => {
     const user = await addUser(db);
     await createManager(user);
 
     expect(await rows("select budget from profiles where user_id = $1", [user])).toEqual([{ budget: 5_000_000 }]);
-    const squad = await rows<{ color: string; n: number }>(
-      "select p.color, count(*)::int n from squads s join players p on p.id = s.player_id where s.user_id = $1 group by 1",
-      [user],
-    );
-    expect(squad.map((r) => [r.color, r.n]).sort()).toEqual(COLORS.map((c) => [c, 3]).sort());
-    const lineup = await rows<{ color: string; n: number }>(
-      "select p.color, count(*)::int n from lineups l join players p on p.id = l.player_id where l.user_id = $1 group by 1",
-      [user],
-    );
-    expect(lineup.map((r) => [r.color, r.n]).sort()).toEqual(COLORS.map((c) => [c, 2]).sort());
+    const perLevel = (table: string, key: string) =>
+      rows<{ level: string; n: number }>(
+        `select gc.group_name as level, count(*)::int n from ${table} t join players p on p.id = t.player_id join game_colors gc on gc.name = p.color where t.user_id = $1 group by 1`,
+        [user],
+      );
+    const squad = await perLevel("squads", "player_id");
+    expect(squad).toHaveLength(LEVELS);
+    expect(squad.every((r) => r.n === 3)).toBe(true);
+    const lineup = await perLevel("lineups", "player_id");
+    expect(lineup).toHaveLength(LEVELS);
+    expect(lineup.every((r) => r.n === 2)).toBe(true);
   });
 
   test("starts the two most valuable players of each color", async () => {
@@ -47,7 +48,7 @@ describe("create_manager", () => {
   test("two managers never share a player", async () => {
     await createManager(await addUser(db), "Uno");
     await createManager(await addUser(db), "Dos");
-    expect(await rows("select count(*)::int n, count(distinct player_id)::int d from squads")).toEqual([{ n: 24, d: 24 }]);
+    expect(await rows("select count(*)::int n, count(distinct player_id)::int d from squads")).toEqual([{ n: 6 * LEVELS, d: 6 * LEVELS }]);
   });
 
   test("with too few free players it fails with the reason and leaves nothing behind", async () => {
@@ -84,7 +85,8 @@ describe("set_lineup", () => {
 
   test("replaces the lineup with another valid 2-per-color choice", async () => {
     const { user, squad } = await managerWithSquad();
-    const worst = COLORS.flatMap((c) => squad.filter((p) => p.color === c).slice(-2).map((p) => p.id));
+    const levelOf = (color: string) => (color === "Blanco" || color === "Azul" ? "Azul y Blanco" : color);
+    const worst = [...new Set(COLORS.map(levelOf))].flatMap((level) => squad.filter((p) => levelOf(p.color) === level).slice(-2).map((p) => p.id));
     await setLineup(user, worst);
     const now = await rows<{ player_id: string }>("select player_id from lineups where user_id = $1", [user]);
     expect(now.map((r) => r.player_id).sort()).toEqual([...worst].sort());
@@ -92,8 +94,8 @@ describe("set_lineup", () => {
 
   test("rejects a lineup that is not 2 per color", async () => {
     const { user, squad } = await managerWithSquad();
-    const threeBlanco = [...squad.filter((p) => p.color === "Blanco").map((p) => p.id), ...squad.filter((p) => p.color !== "Blanco").slice(0, 5).map((p) => p.id)];
-    await expect(setLineup(user, threeBlanco)).rejects.toThrow(/2 players per color/);
+    const threeRosa = [...squad.filter((p) => p.color === "Rosa").map((p) => p.id), ...squad.filter((p) => p.color !== "Rosa").slice(0, 15).map((p) => p.id)];
+    await expect(setLineup(user, threeRosa)).rejects.toThrow(/2 players per color/);
   });
 
   test("rejects a player the user does not own", async () => {
@@ -137,6 +139,6 @@ describe("row level security", () => {
     const user = await addUser(db);
     await createManager(user);
     const seen = await asUser(db, user, async () => (await db.query<{ n: number }>("select count(*)::int n from players")).rows[0].n);
-    expect(seen).toBe(32);
+    expect(seen).toBe(8 * COLORS.length);
   });
 });

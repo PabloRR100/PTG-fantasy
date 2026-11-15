@@ -1,6 +1,6 @@
 import { formatMoney } from "@/lib/format";
 
-export const metadata = { title: "Normas de juego · PTG Fantasy" };
+export const metadata = { title: "Normas de juego · Padel Fantasy" };
 
 // Every rule here is what the pilot really does (supabase/migrations, src/services), not what docs/GAMEPLAY.md
 // proposes: the daily value change and any per-level factor are NOT built, so they are not promised.
@@ -11,21 +11,21 @@ export default function NormasPage() {
     <>
       <h1>Normas de juego</h1>
       <p className="lead">
-        PTG Fantasy usa jugadores y partidos reales de la liga de Madrid (masculino, de Blanco a Rosa). Estas son las reglas
+        Padel Fantasy usa jugadores y partidos reales de la liga de Madrid (masculino y femenino, de Blanco a Naranja). Estas son las reglas
         que aplica el piloto ahora mismo.
       </p>
 
       <section className="rules">
         <h2>Tu equipo</h2>
         <ul>
-          <li>Empiezas con <strong>{formatMoney(START_BUDGET)}</strong> y una plantilla de <strong>12 jugadores al azar</strong>: 3 de cada nivel (Blanco, Azul, Verde y Rosa).</li>
+          <li>Empiezas con <strong>{formatMoney(START_BUDGET)}</strong> y una plantilla de <strong>27 jugadores al azar</strong>: 3 de cada uno de los 9 niveles (Azul y Blanco cuentan como un solo nivel; después vienen Verde, Rosa, Oro, Granate, Morado, Marrón, Plata y Naranja).</li>
           <li>Un jugador solo puede estar en un equipo a la vez.</li>
-          <li>Tu alineación son <strong>8 titulares: 2 de cada nivel</strong>. Puedes cambiarla cuando quieras.</li>
+          <li>Tu alineación son <strong>18 titulares: 2 de cada nivel</strong>. Puedes cambiarla cuando quieras.</li>
           <li>Puntúa la alineación que tengas a las <strong>06:00 (hora de Madrid)</strong>, durante las 24 horas siguientes. Un cambio que hagas hoy empieza a puntuar desde el siguiente cierre de las 06:00.</li>
         </ul>
 
         <h2>Puntos por partido</h2>
-        <p>Cada titular puntúa por cada partido real que juega en PTG:</p>
+        <p>Cada titular puntúa por cada partido real que juega en la liga:</p>
         <table>
           <thead><tr><th>Qué pasa</th><th className="num">Puntos</th></tr></thead>
           <tbody>
@@ -41,7 +41,7 @@ export default function NormasPage() {
           <li>Un partido sin jugar (walkover) da 0 y no cuenta como jugado.</li>
           <li>Cada partido cuenta para el día (de 06:00 a 06:00) en el que empezó.</li>
           <li>Los jugadores de banquillo no puntúan.</li>
-          <li>Durante el piloto los resultados se importan de PTG a mano, así que pueden tardar en aparecer.</li>
+          <li>Durante el piloto los resultados se importan de la liga a mano, así que pueden tardar en aparecer.</li>
         </ul>
 
         <h2>Mercado y pujas</h2>
@@ -64,7 +64,7 @@ export default function NormasPage() {
 
         <h2>Valor de los jugadores</h2>
         <ul>
-          <li>El valor sale de los datos de PTG cuando se importa el jugador: una base por nivel (Blanco la más alta, Rosa la más baja), ajustada por su porcentaje de victorias y por cuánto juega.</li>
+          <li>El valor sale de los datos de la liga cuando se importa el jugador: una base por nivel (Blanco la más alta, Naranja la más baja), ajustada por su porcentaje de victorias y por cuánto juega.</li>
           <li>En el piloto <strong>el valor no cambia</strong> con el tiempo ni con las pujas.</li>
         </ul>
 
@@ -78,7 +78,7 @@ export default function NormasPage() {
         <h2>Todavía no existe</h2>
         <ul>
           <li>Cambio diario del valor según la forma del jugador.</li>
-          <li>Ajuste de puntos por nivel: un punto vale lo mismo en Blanco que en Rosa; el equilibrio sale de elegir 2 de cada nivel.</li>
+          <li>Ajuste de puntos por nivel: un punto vale lo mismo en Blanco que en Naranja; el equilibrio sale de elegir 2 de cada nivel.</li>
         </ul>
       </section>
     </>

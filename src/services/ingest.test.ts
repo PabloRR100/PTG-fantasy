@@ -21,7 +21,8 @@ const GROUP = "7bdccef6-c5aa-235a-fab5-ecebbae72a48";
 const NOW = new Date("2026-11-14T09:00:00Z");
 
 const sampleMatch = () => parseMatchPage(fixture("match-sample.html"), MATCH_ID, NOW);
-const sampleRanking = () => buildPlayersPayload(parseRanking(fixture("ranking-sample.html")), "Blanco", GROUP);
+const sampleRanking = (gender: "male" | "female" = "male") =>
+  buildPlayersPayload(parseRanking(fixture("ranking-sample.html")).map((r) => ({ ...r, color: "Blanco" as const, gender, groupId: GROUP })));
 
 /** Calls the real SQL function the way supabase-js .rpc() does: named arguments, jsonb in and out. */
 const rpcFor = (db: PGlite): Rpc => async (fn, args) => {
@@ -66,7 +67,10 @@ describe("buildMatchPayload", () => {
 
 describe("buildPlayersPayload", () => {
   test("prices a player from color, ratio and matches played", () => {
-    expect(sampleRanking()[0]).toMatchObject({ display_name: "Ana Mora", color: "Blanco", group_id: GROUP, value: 2_600_000 });
+    expect(sampleRanking()[0]).toMatchObject({ display_name: "Ana Mora", color: "Blanco", group_id: GROUP, gender: "male", value: 2_600_000 });
+  });
+  test("carries the gender of the group the player was read in", () => {
+    expect(sampleRanking("female").every((p) => p.gender === "female")).toBe(true);
   });
 });
 
@@ -87,6 +91,15 @@ describe("ingest into Postgres", () => {
     const ana = (await db.query<{ ratio: string; value: number }>("select ratio, value from players where display_name = 'Ana Mora'")).rows[0];
     expect(Number(ana.ratio)).toBe(0.1); // refreshed
     expect(ana.value).toBe(2_600_000); // set once
+  });
+
+  test("a player who moves color and gender keeps his row; the value is not repriced", async () => {
+    await ingestPlayers(rpc, sampleRanking());
+    const moved = sampleRanking("female").map((p) => ({ ...p, color: "Azul" as const, value: 1 }));
+    await ingestPlayers(rpc, moved);
+    expect(await count("players")).toBe(3);
+    const ana = (await db.query<{ color: string; gender: string; value: number }>("select color, gender, value from players where display_name = 'Ana Mora'")).rows[0];
+    expect(ana).toEqual({ color: "Azul", gender: "female", value: 2_600_000 });
   });
 
   test("two players with the same name but different ids stay two players", async () => {

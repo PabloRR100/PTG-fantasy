@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { safeAvatarUrl } from "@/lib/avatar";
+import { syncAvatar } from "@/lib/avatar-sync";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, type Profile } from "@/services/game-data";
 
@@ -22,5 +23,6 @@ export async function requireManager(): Promise<{ db: SupabaseClient; userId: st
   const { userId, avatarUrl } = await requireSession(db);
   const profile = await getProfile(db, userId);
   if (!profile) redirect("/onboarding");
+  await syncAvatar(db, profile.avatar_url, avatarUrl);
   return { db, userId, avatarUrl, profile };
 }

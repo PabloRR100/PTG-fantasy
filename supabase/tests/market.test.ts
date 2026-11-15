@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { addUser, asUser, COLORS, freshDb, seedPlayers } from "./db";
+import { addUser, asUser, COLORS, LEVELS, freshDb, seedPlayers } from "./db";
 
 let db: PGlite;
 const WINTER_6AM = "2026-11-14T05:00:00Z"; // 06:00 Madrid (UTC+1)
@@ -147,14 +147,14 @@ describe("close_cycle: when it acts", () => {
 });
 
 describe("close_cycle: what it leaves behind", () => {
-  test("snapshots every manager's 8 starters under the cycle date", async () => {
+  test("snapshots every manager's starters under the cycle date", async () => {
     const [a, b] = [await manager("Equipo A"), await manager("Equipo B")];
     await close();
     const rows = await q<{ user_id: string; n: number }>(
       "select user_id, count(*)::int n from lineup_snapshots where cycle_date = '2026-11-14' group by 1",
     );
     expect(rows.sort((x, y) => x.user_id.localeCompare(y.user_id))).toEqual(
-      [{ user_id: a, n: 8 }, { user_id: b, n: 8 }].sort((x, y) => x.user_id.localeCompare(y.user_id)),
+      [{ user_id: a, n: 2 * LEVELS }, { user_id: b, n: 2 * LEVELS }].sort((x, y) => x.user_id.localeCompare(y.user_id)),
     );
   });
 
@@ -165,9 +165,9 @@ describe("close_cycle: what it leaves behind", () => {
       `select p.color, to_char(l.closes_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as closes_at, exists (select 1 from squads s where s.player_id = p.id) as owned
        from market_listings l join players p on p.id = l.player_id where l.status = 'open'`,
     );
-    expect(open).toHaveLength(12);
+    expect(open).toHaveLength(3 * COLORS.length);
     expect(open.some((r) => r.owned)).toBe(false);
-    expect(COLORS.map((c) => open.filter((r) => r.color === c).length)).toEqual([3, 3, 3, 3]);
+    expect(COLORS.map((c) => open.filter((r) => r.color === c).length)).toEqual(COLORS.map(() => 3));
     expect(new Set(open.map((r) => r.closes_at))).toEqual(new Set(["2026-11-15T05:00:00Z"]));
   });
 
@@ -211,14 +211,14 @@ describe("sell_player", () => {
     expect(await q("select 1 from squads where player_id = $1", [bench.id])).toEqual([]);
   });
 
-  test("selling a starter promotes the best bench player of that color", async () => {
+  test("selling a starter promotes the best bench player of that level", async () => {
     const a = await manager("Equipo A");
     const starter = (await q<{ id: string }>(
-      "select p.id from lineups l join players p on p.id = l.player_id where l.user_id = $1 and p.color = 'Blanco' order by p.value desc limit 1", [a]))[0].id;
+      "select p.id from lineups l join players p on p.id = l.player_id where l.user_id = $1 and p.color = 'Rosa' order by p.value desc limit 1", [a]))[0].id;
     await sell(a, starter);
-    const lineup = await q<{ color: string; n: number }>(
-      "select p.color, count(*)::int n from lineups l join players p on p.id = l.player_id where l.user_id = $1 group by 1", [a]);
-    expect(lineup.map((r) => r.n)).toEqual([2, 2, 2, 2]);
+    const lineup = await q<{ level: string; n: number }>(
+      "select gc.group_name as level, count(*)::int n from lineups l join players p on p.id = l.player_id join game_colors gc on gc.name = p.color where l.user_id = $1 group by 1", [a]);
+    expect(lineup.map((r) => r.n)).toEqual(Array(LEVELS).fill(2));
   });
 
   test("refuses to leave fewer than 2 players of a color, and refuses a player you do not own", async () => {

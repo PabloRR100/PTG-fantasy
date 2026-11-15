@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
 
   return (
     <main className="page narrow">
-      <Image src="/brand/ptg-icon-192.png" alt="PTG" width={72} height={72} className="auth-logo" />
+      <Image src="/brand/icon-192.png" alt="" width={72} height={72} className="auth-logo" />
       <h1>Crea tu equipo</h1>
       <p>Te damos 5.000.000 € y una plantilla de 12 jugadores al azar: 3 de cada nivel (Blanco, Azul, Verde y Rosa). Podrás cambiar la alineación y pujar por más jugadores cuando quieras.</p>
       <CreateTeamForm />

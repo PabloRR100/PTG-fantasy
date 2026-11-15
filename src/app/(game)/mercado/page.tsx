@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { BidForm } from "@/components/forms";
+import { MarketTable, type MarketRow } from "@/components/MarketTable";
 import { formatMoney } from "@/lib/format";
 import { requireManager } from "@/lib/session";
-import { getOpenListings } from "@/services/game-data";
+import { getOpenListings, getPlayerDirectory } from "@/services/game-data";
 
 export default async function MercadoPage() {
   const { db, userId, profile } = await requireManager();
-  const { listings, myBids } = await getOpenListings(db, userId);
+  const [{ listings, myBids }, directory] = await Promise.all([getOpenListings(db, userId), getPlayerDirectory(db)]);
+  const byId = new Map(directory.map((row) => [row.id, row]));
+  const rows: MarketRow[] = listings.flatMap((l) => {
+    const row = byId.get(l.player.id);
+    return row ? [{ ...row, listingId: l.id, myBid: l.myBid }] : [];
+  });
 
   return (
     <>
@@ -17,25 +22,10 @@ export default async function MercadoPage() {
       </p>
 
       <h2>Subastas abiertas</h2>
-      {listings.length === 0 ? (
+      {rows.length === 0 ? (
         <p>No hay subastas abiertas ahora mismo. Vuelve pronto: se abren subastas nuevas cada día.</p>
       ) : (
-        <ul className="plain cards">
-          {listings.map((l) => (
-            <li key={l.id} className="card">
-              <div className="card-head">
-                <span className={`chip color-${l.player.color}`}>{l.player.color}</span>
-                <strong>{l.player.display_name}</strong>
-              </div>
-              <dl className="facts">
-                <div><dt>Valor</dt><dd>{formatMoney(l.player.value)}</dd></div>
-                <div><dt>Partidos</dt><dd>{l.player.matches_played}</dd></div>
-                <div><dt>Victorias</dt><dd>{Math.round(l.player.ratio * 100)}%</dd></div>
-              </dl>
-              <BidForm listingId={l.id} minimum={l.player.value} budget={profile.budget} current={l.myBid} />
-            </li>
-          ))}
-        </ul>
+        <MarketTable rows={rows} budget={profile.budget} />
       )}
 
       <h2>Tus pujas</h2>

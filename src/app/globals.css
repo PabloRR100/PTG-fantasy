@@ -1,4 +1,4 @@
-/* Design tokens taken from PTG's own app (app.padelteamgourmet.com stylesheet): paper, ink, court green,
+/* Design tokens: paper, ink, court green,
    ball yellow; Bricolage Grotesque for titles, Geist for the interface, Archivo Narrow for small labels. */
 :root {
   --paper-light: #fbf9f4;
@@ -14,11 +14,17 @@
   --error: #9a3025;
   --border-control: #7b7565;
   --relief: #fffefa;
-  /* Level dots as PTG draws them (Verde is the court green). */
+  /* Level dots (Verde is the court green). */
   --Blanco: #ffffff;
   --Azul: #2563eb;
   --Verde: #2a5d47;
   --Rosa: #ec4899;
+  --Oro: #d4a72c;
+  --Granate: #8a1f33;
+  --Morado: #7048b8;
+  --Marrón: #7a5230;
+  --Plata: #aab0b8;
+  --Naranja: #ea7d24;
   --radius-card: 20px;
   --radius-control: 10px;
   --display: var(--font-display-loaded), "Bricolage Grotesque", system-ui, sans-serif;
@@ -44,11 +50,12 @@ a { color: var(--court); }
 .rules ul { padding-left: 1.2rem; display: grid; gap: 6px; max-width: 68ch; }
 .rules table { max-width: 420px; margin-bottom: 8px; }
 
-/* Header: court green, avatar on the left, PTG mark and wordmark, tabs below on narrow screens. */
+/* Header: court green, avatar on the left, brand mark and wordmark, tabs below on narrow screens. */
 .topbar { background: var(--court); color: var(--paper-light); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; }
 .avatar-button { all: unset; cursor: pointer; border-radius: 999px; display: inline-flex; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 999px; background: var(--ball); color: var(--ink); font-family: var(--display); font-weight: 800; border: 2px solid var(--ball); flex: none; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-xs { width: 28px; height: 28px; font-size: .7rem; border-width: 1px; }
 .avatar-sm { width: 44px; height: 44px; font-size: 1rem; }
 .avatar-lg { width: 56px; height: 56px; font-size: 1.25rem; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -104,6 +111,12 @@ label { font-weight: 600; }
 .color-group.color-Azul { border-left-color: var(--Azul); }
 .color-group.color-Verde { border-left-color: var(--Verde); }
 .color-group.color-Rosa { border-left-color: var(--Rosa); }
+.color-group.color-Oro { border-left-color: var(--Oro); }
+.color-group.color-Granate { border-left-color: var(--Granate); }
+.color-group.color-Morado { border-left-color: var(--Morado); }
+.color-group.color-Marrón { border-left-color: var(--Marrón); }
+.color-group.color-Plata { border-left-color: var(--Plata); }
+.color-group.color-Naranja { border-left-color: var(--Naranja); }
 .player { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; padding: 10px 6px; border-radius: var(--radius-control); font-weight: 400; cursor: pointer; min-height: 44px; }
 .player.is-starter { background: #eaeed0; font-weight: 600; }
 .player input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--court); }
@@ -116,6 +129,12 @@ label { font-weight: 600; }
 .chip.color-Azul { --dot: var(--Azul); }
 .chip.color-Verde { --dot: var(--Verde); }
 .chip.color-Rosa { --dot: var(--Rosa); }
+.chip.color-Oro { --dot: var(--Oro); }
+.chip.color-Granate { --dot: var(--Granate); }
+.chip.color-Morado { --dot: var(--Morado); }
+.chip.color-Marrón { --dot: var(--Marrón); }
+.chip.color-Plata { --dot: var(--Plata); }
+.chip.color-Naranja { --dot: var(--Naranja); }
 .sell-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--fog); }
 .sell-row .inline { margin-left: auto; }
 
@@ -153,6 +172,14 @@ input[type="search"] { font: inherit; padding: 10px 12px; border: 1px solid var(
 .chip-toggle.color-Azul { --dot: var(--Azul); }
 .chip-toggle.color-Verde { --dot: var(--Verde); }
 .chip-toggle.color-Rosa { --dot: var(--Rosa); }
+.chip-toggle.color-Oro { --dot: var(--Oro); }
+.chip-toggle.color-Granate { --dot: var(--Granate); }
+.chip-toggle.color-Morado { --dot: var(--Morado); }
+.chip-toggle.color-Marrón { --dot: var(--Marrón); }
+.chip-toggle.color-Plata { --dot: var(--Plata); }
+.chip-toggle.color-Naranja { --dot: var(--Naranja); }
+/* Women's and men's groups share color names: women get a square dot, men a round one. */
+.chip.is-female::before, .chip-toggle.is-female::before { border-radius: 2px; }
 .chip-toggle:hover:not(:disabled) { background: var(--paper-deep); color: var(--ink); }
 .chip-toggle[aria-pressed="true"] { background: var(--court); color: var(--paper-light); border-color: var(--court); }
 .chip-toggle[aria-pressed="true"]:hover:not(:disabled) { background: var(--court-deep); color: var(--paper-light); }
@@ -190,3 +217,87 @@ table.players th { white-space: nowrap; }
   .p-owner { max-width: 9rem; }
   .swipe-hint { display: inline; }
 }
+
+/* Notifications: reminder banner and settings */
+.push-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; background: var(--paper-light); border: 1px solid var(--fog); border-left: 6px solid var(--ball); border-radius: var(--radius-card); padding: 12px 16px; margin-bottom: 20px; }
+.push-banner-text { flex: 1 1 260px; display: grid; gap: 2px; min-width: 0; }
+.push-banner-text span { color: var(--ash); font-size: .92rem; }
+.push-banner button { min-height: 44px; }
+.settings-card { background: var(--paper-light); border: 1px solid var(--fog); border-radius: var(--radius-card); padding: 16px; display: grid; gap: 10px; }
+.settings-card h2 { margin: 0; font-size: 1.1rem; }
+.settings-card p { margin: 0; }
+.switch-row { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 6px 0; font-weight: 400; cursor: pointer; }
+.switch-row input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--court); flex: none; }
+.switch-row span { display: grid; gap: 2px; }
+.switch-row small { color: var(--ash); font-size: .88rem; }
+.status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; background: var(--fog); margin-right: 6px; }
+.status-dot.on { background: var(--court); box-shadow: 0 0 0 3px #cfe0d6; }
+
+/* Standings: the team cell holds a small photo and the name. The name keeps a minimum width and wraps at word
+   boundaries; on a phone the cells tighten so all five columns fit, and the box scrolls sideways only as a last resort. */
+.team-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 7.5rem; }
+.team-name { overflow-wrap: break-word; min-width: 0; }
+.standings-wrap { overflow-x: auto; border-radius: var(--radius-card); }
+table.standings { min-width: 100%; }
+table.standings td.num { white-space: nowrap; }
+@media (max-width: 520px) {
+  table.standings th, table.standings td { padding: 9px 6px; font-size: .88rem; }
+  table.standings th { letter-spacing: .02em; font-size: .7rem; }
+  table.standings th:first-child, table.standings td:first-child { padding-left: 10px; }
+  table.standings th.num { white-space: normal; }
+  .team-cell { min-width: 6.5rem; gap: 6px; }
+}
+@media (max-width: 380px) {
+  table.standings th, table.standings td { padding-left: 4px; padding-right: 4px; font-size: .84rem; }
+  table.standings th { letter-spacing: 0; font-size: .66rem; }
+  .team-cell { min-width: 4.6rem; gap: 5px; }
+  table.standings .avatar-xs { width: 24px; height: 24px; font-size: .62rem; }
+}
+
+.chips-by-category { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.chips-by-category .chip-toggle { justify-content: flex-start; min-width: 0; }
+
+.chip.color-Oro, .chip-toggle.color-Oro { --dot: #c79518; }
+.chip.color-Granate, .chip-toggle.color-Granate { --dot: #802844; }
+.chip.color-Morado, .chip-toggle.color-Morado { --dot: #7544a1; }
+.chip.color-Marrón, .chip-toggle.color-Marrón { --dot: #885638; }
+.chip.color-Plata, .chip-toggle.color-Plata { --dot: #a3a9b1; }
+.chip.color-Naranja, .chip-toggle.color-Naranja { --dot: #e87822; }
+
+/* Tablón and Buzón: one line per event, a small icon, the color chip and the time. */
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.feed-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--paper-light); border: 1px solid var(--fog); border-radius: var(--radius-card); }
+.feed-item p { margin: 0; }
+.feed-item.is-unread { border-left: 4px solid var(--court); background: var(--relief); }
+.feed-icon { font-size: 1.4rem; line-height: 1.2; flex: none; }
+.feed-meta { display: flex; gap: 10px; align-items: center; margin-top: 4px; color: var(--ash); font-family: var(--label); font-size: .85rem; }
+.empty-feed { color: var(--ash); padding: 18px 4px; }
+.bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--paper-light); text-decoration: none; flex: none; }
+@media (max-width: 720px) { .bell { order: 1; margin-left: auto; } .nav { order: 2; } }
+.icon { display: block; flex: none; }
+.bell-badge { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--error); color: #fff; font: 700 .72rem/18px var(--label); text-align: center; }
+
+/* Forma: arrow of the latest closed week against the previous ones. */
+td.trend { text-align: center; font-family: var(--label); font-weight: 700; }
+.trend-up { color: var(--court); }
+.trend-down { color: var(--error); }
+.trend-flat, .trend-none { color: var(--ash); }
+
+/* Tablón, Betcomm style: a pill per day on a hairline, then one card per event; the left edge shows the kind. */
+.feed-days { display: grid; gap: 14px; }
+.day-line { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; }
+.day-line::before, .day-line::after { content: ""; flex: 1; height: 1px; background: var(--fog); opacity: .6; }
+.day-separator { font: 700 .75rem var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--ash); background: var(--paper); border: 1px solid var(--fog); border-radius: 999px; padding: 3px 12px; }
+.feed-card { display: flex; gap: 12px; align-items: center; padding: 12px 14px; background: var(--paper-light); border: 1px solid var(--fog); border-left-width: 4px; border-radius: var(--radius-card); }
+.feed-card-signed { border-left-color: var(--court); }
+.feed-card-sold { border-left-color: var(--ball); }
+.feed-body { flex: 1; min-width: 0; }
+.feed-body p { margin: 0; }
+.feed-kind { display: flex; align-items: center; gap: 6px; font: 700 .72rem var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--ash); margin-bottom: 2px !important; }
+.feed-card-signed .feed-kind { color: var(--court); }
+.feed-amount { font: 800 1rem var(--display); white-space: nowrap; }
+.feed-card-signed .feed-amount { color: var(--court); }
+@media (max-width: 520px) { .feed-card { align-items: flex-start; flex-wrap: wrap; } .feed-amount { margin-left: auto; } }
+
+.install-steps { margin: 6px 0 0; padding-left: 1.2rem; font-size: .9rem; }
+.install-steps li { margin: 2px 0; }

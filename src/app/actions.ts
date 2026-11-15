@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { rpcMessage, validateTeamName } from "@/lib/rpc-errors";
+import type { Prefs } from "@/services/notifications";
 
 // Server actions are the write surface of the pages. Each one is a thin call to a SQL function:
 // ownership, money and the lineup rule are enforced there, never here.
@@ -57,8 +58,31 @@ export async function closeMarket(): Promise<ActionState> {
   return { ok: "Mercado cerrado: pujas resueltas, alineaciones guardadas y subastas nuevas abiertas." };
 }
 
+export async function markNotificationsRead(): Promise<void> {
+  const error = await callRpc("mark_notifications_read", {});
+  if (error) console.error(`mark_notifications_read: ${error}`);
+  revalidatePath("/", "layout");
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function saveNotificationPrefs(prefs: Prefs): Promise<ActionState> {
+  if (typeof prefs?.bids !== "boolean" || typeof prefs?.market !== "boolean") return { error: "Preferencias no válidas." };
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (!userId) return { error: "Tu sesión ha caducado. Vuelve a entrar." };
+  const { error } = await supabase
+    .from("notification_prefs")
+    .upsert({ user_id: userId, bids: prefs.bids, market: prefs.market, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) {
+    console.error(`saveNotificationPrefs failed: ${error.message}`);
+    return { error: "No se pudieron guardar las preferencias. Inténtalo de nuevo." };
+  }
+  revalidatePath("/ajustes");
+  return { ok: "Preferencias guardadas." };
 }
