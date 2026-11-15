@@ -51,10 +51,10 @@ export function inboxEntry(row: InboxRow): InboxEntry {
 const madridDay = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date(iso)); // YYYY-MM-DD
 
 /** Newest-first rows split into days (Madrid calendar), each with "Hoy", "Ayer" or "jue, 12 nov", as Betcomm's Tablón does. */
-export function groupByDay(rows: ActivityRow[], now = new Date()): { key: string; label: string; rows: ActivityRow[] }[] {
+export function groupByDay<T extends { created_at: string }>(rows: T[], now = new Date()): { key: string; label: string; rows: T[] }[] {
   const today = madridDay(now.toISOString());
   const yesterday = madridDay(new Date(now.getTime() - 86_400_000).toISOString());
-  const days: { key: string; label: string; rows: ActivityRow[] }[] = [];
+  const days: { key: string; label: string; rows: T[] }[] = [];
   for (const row of rows) {
     const key = madridDay(row.created_at);
     let day = days.find((d) => d.key === key);

@@ -24,6 +24,7 @@ export function Drawer({ teamName, budget, avatarUrl, isAdmin }: Props) {
     { href: "/mercado", label: "Mercado" },
     { href: "/jugadores", label: "Jugadores" },
     { href: "/clasificacion", label: "Clasificación" },
+    { href: "/jornada", label: "Jornada" },
     { href: "/normas", label: "Normas de juego" },
     { href: "/ajustes", label: "Ajustes" },
     ...(isAdmin ? [{ href: "/admin", label: "Administración" }] : []),

@@ -301,3 +301,16 @@ td.trend { text-align: center; font-family: var(--label); font-weight: 700; }
 
 .install-steps { margin: 6px 0 0; padding-left: 1.2rem; font-size: .9rem; }
 .install-steps li { margin: 2px 0; }
+
+/* Jornada: week switcher, the bench column and the podium card of the Tablón. */
+.week-nav { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 4px 0 8px; font-size: 1.05rem; }
+.week-nav a, .week-nav span { padding: 4px 12px; font-size: 1.4rem; line-height: 1; }
+.week-nav span { opacity: .3; }
+a.team-cell { text-decoration: none; color: inherit; }
+a.team-cell[aria-current="true"] .team-name { font-weight: 700; }
+td.missed { color: var(--muted, #6b6b5f); }
+tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
+.podium { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
+.podium li { display: flex; align-items: center; gap: 8px; }
+.podium-rank { width: 1.2rem; font-weight: 700; }
+.podium-points { margin-left: auto; font-weight: 700; }

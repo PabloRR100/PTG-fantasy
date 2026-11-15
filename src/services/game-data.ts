@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cycleBoundsFor, cycleDateFor } from "@/services/cycles";
+import { jornadaFeedRows, jornadaWeeks, teamJornada, weekRanking, type JornadaFeedRow, type TeamJornada, type WeekRank } from "@/services/jornada";
 import { buildStandings, type CyclePointsRow, type StandingRow, type TeamRow } from "@/services/standings";
 import type { Color } from "@/services/lineup";
 import { fetchAllPages } from "@/lib/paginate";
@@ -180,4 +181,47 @@ export async function getNotificationPrefs(db: SupabaseClient, userId: string): 
     "load notification preferences",
   );
   return row ? { bids: row.bids, market: row.market } : DEFAULT_PREFS;
+}
+
+/** The Tablón's closed-jornada cards: the podium of each finished week, from the same points the standings use. */
+export async function getJornadaFeed(db: SupabaseClient, now = new Date()): Promise<JornadaFeedRow[]> {
+  const [teams, rows] = await Promise.all([
+    db.from("profiles").select("user_id, team_name, avatar_url").then((r) => unwrap<TeamRow[]>(r, "load teams")),
+    db.from("manager_cycle_points").select("user_id, cycle_date, points").then((r) => unwrap<CyclePointsRow[]>(r, "load points")),
+  ]);
+  return jornadaFeedRows(teams, rows, cycleDateFor(now), (weekStart) => cycleBoundsFor(new Date(`${weekStart}T12:00:00Z`)).end, 6);
+}
+
+export type JornadaView = { weeks: string[]; weekStart: string; ranking: WeekRank[] };
+
+/** The weeks to browse and the ranking of every team in the chosen one (the running week when none is given). */
+export async function getJornada(db: SupabaseClient, weekStart: string | null, now = new Date()): Promise<JornadaView> {
+  const currentCycle = cycleDateFor(now);
+  const [teams, rows, cycles] = await Promise.all([
+    db.from("profiles").select("user_id, team_name, avatar_url").then((r) => unwrap<TeamRow[]>(r, "load teams")),
+    db.from("manager_cycle_points").select("user_id, cycle_date, points").then((r) => unwrap<CyclePointsRow[]>(r, "load points")),
+    db.from("cycles").select("cycle_date").then((r) => unwrap<{ cycle_date: string }[]>(r, "load cycles")),
+  ]);
+  const weeks = jornadaWeeks([...cycles.map((c) => c.cycle_date), ...rows.map((r) => r.cycle_date)], currentCycle);
+  const week = weekStart && weeks.includes(weekStart) ? weekStart : weeks[0];
+  const ranking = weekRanking(teams, rows, week);
+  return { weeks, weekStart: week, ranking };
+}
+
+/** The players of one team in one jornada. Snapshots, squads, matches and results are readable by every signed-in user (RLS). */
+export async function getTeamJornada(db: SupabaseClient, teamUserId: string, weekStart: string): Promise<TeamJornada> {
+  const lastDay = new Date(new Date(`${weekStart}T00:00:00Z`).getTime() + 6 * 86_400_000).toISOString().slice(0, 10);
+  const start = cycleBoundsFor(new Date(`${weekStart}T12:00:00Z`)).start;
+  const end = cycleBoundsFor(new Date(`${lastDay}T12:00:00Z`)).end;
+  const [snapshots, squad, matches] = await Promise.all([
+    db.from("lineup_snapshots").select("cycle_date, player_id").eq("user_id", teamUserId).gte("cycle_date", weekStart).lte("cycle_date", lastDay).then((r) => unwrap<{ cycle_date: string; player_id: string }[]>(r, "load snapshots")),
+    db.from("squads").select("player_id").eq("user_id", teamUserId).then((r) => unwrap<{ player_id: string }[]>(r, "load squad")),
+    db.from("ptg_matches").select("id, played_at, walkover").gte("played_at", start.toISOString()).lt("played_at", end.toISOString()).then((r) => unwrap<MatchRow[]>(r, "load week matches")),
+  ]);
+  const results = matches.length === 0 ? [] : await fetchAllPages<ResultRow>(
+    "load week results", (from, to) => db.from("match_players").select("match_id, player_id, points").in("match_id", matches.map((m) => m.id)).order("match_id").order("player_id").range(from, to));
+  const ids = [...new Set([...snapshots.map((s) => s.player_id), ...squad.map((s) => s.player_id), ...results.map((r) => r.player_id)])];
+  const players = ids.length === 0 ? [] : await fetchAllPages<{ id: string; display_name: string; color: string }>(
+    "load jornada players", (from, to) => db.from("players").select("id, display_name, color").in("id", ids).order("id").range(from, to));
+  return teamJornada({ weekStart, snapshots, squadIds: squad.map((s) => s.player_id), matches, results, players });
 }
