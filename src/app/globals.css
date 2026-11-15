@@ -308,3 +308,4 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
 .podium li { display: flex; align-items: center; gap: 8px; }
 .podium-rank { width: 1.2rem; font-weight: 700; }
 .podium-points { margin-left: auto; font-weight: 700; }
+.chip-fixed { width: 6.5rem; justify-self: start; align-self: center; flex: none; }
