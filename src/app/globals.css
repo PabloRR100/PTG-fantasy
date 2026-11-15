@@ -304,8 +304,21 @@ a.team-cell[aria-current="true"] .team-name { font-weight: 700; }
 tr.bench-row td { background: rgba(0, 0, 0, .05); color: var(--muted, #6b6b5f); font-style: italic; }
 .bench-tag { font-size: .75rem; }
 tfoot td { font-weight: 700; border-top: 2px solid var(--line, #d8d4c0); }
-.podium { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
-.podium li { display: flex; align-items: center; gap: 8px; }
-.podium-rank { width: 1.2rem; font-weight: 700; }
-.podium-points { margin-left: auto; font-weight: 700; }
+.jornada-head { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; box-sizing: border-box; }
+.jornada-title { flex: 1; min-width: 0; line-height: 1.25; }
+.jornada-round { font-size: .95rem; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.jornada-kicker { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; color: var(--ash); }
+.jornada-time { display: block; font-size: .72rem; color: var(--ash); }
+.jornada-chevron { font-size: .7rem; color: var(--ash); transition: transform .2s; }
+.jornada-chevron.is-open { transform: rotate(180deg); }
+.podium { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 7px; }
+.podium li { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+.podium li.is-idle { opacity: .6; }
+.podium .team-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium-rank { width: 1rem; text-align: right; color: var(--ash); font-variant-numeric: tabular-nums; }
+.podium-points { width: 4rem; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.podium-overall { width: 2.2rem; text-align: right; color: var(--ash); font-variant-numeric: tabular-nums; }
+.delta { width: 1.6rem; text-align: right; font-weight: 700; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.delta-up { color: #1f9d55; } .delta-down { color: var(--error); } .delta-flat { color: var(--ash); }
+.podium-more { margin: 0 0 4px 1.6rem; font-size: .75rem; color: var(--ash); }
 .chip-fixed { width: 6.5rem; justify-self: start; align-self: center; flex: none; }

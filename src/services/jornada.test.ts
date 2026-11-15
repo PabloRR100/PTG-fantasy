@@ -56,11 +56,18 @@ describe("teamJornada", () => {
 });
 
 describe("jornadaFeedRows", () => {
-  it("makes a podium card per closed week with points, dated at the week's end", () => {
-    const end = (w: string) => new Date(`${w}T04:00:00Z`);
-    const out = jornadaFeedRows(teams, rows, "2026-11-17", end);
-    expect(out.map((o) => o.weekStart)).toEqual(["2026-11-09"]);
-    expect(out[0].podium.map((p) => p.team)).toEqual(["Alfa", "Beta"]);
+  const end = (w: string) => new Date(`${w}T04:00:00Z`);
+  it("makes one card per closed week with every team, its week points, overall rank and movement", () => {
+    const wk = [
+      { user_id: "a", cycle_date: "2026-11-02", points: 30 }, { user_id: "b", cycle_date: "2026-11-02", points: 10 },
+      { user_id: "a", cycle_date: "2026-11-09", points: 5 }, { user_id: "b", cycle_date: "2026-11-09", points: 40 },
+    ];
+    const out = jornadaFeedRows(teams, wk, "2026-11-17", end);
+    expect(out.map((o) => o.weekStart)).toEqual(["2026-11-09", "2026-11-02"]);
+    const latest = out[0].entries.map((e) => [e.team, e.points, e.rank, e.overallRank, e.delta]);
+    // Beta won the week (40) and climbed from 2nd to 1st (50 vs 35); Alfa fell; Cero never played.
+    expect(latest).toEqual([["Beta", 40, 1, 1, 1], ["Alfa", 5, 2, 2, -1], ["Cero", 0, 3, 3, 0]]);
+    expect(out[1].entries.every((e) => e.delta === 0)).toBe(true); // first week: nothing to move from
   });
   it("skips the running week", () => {
     expect(jornadaFeedRows(teams, rows, "2026-11-10", (w) => new Date(w))).toEqual([]);
