@@ -7,16 +7,16 @@ const LINKS = [
   { href: "/tablon", label: "Tablón" },
   { href: "/equipo", label: "Equipo" },
   { href: "/mercado", label: "Mercado" },
-  { href: "/jugadores", label: "Jugadores" },
+  { href: "/jornada", label: "Jornada" },
   { href: "/clasificacion", label: "Clasificación" },
 ];
 
-export function Nav({ isAdmin }: { isAdmin: boolean }) {
+/** The five main tabs, second row of the top bar; the rest (Jugadores, Buzón, Normas, Ajustes, Administración) is in the side menu. */
+export function Nav() {
   const pathname = usePathname();
-  const links = isAdmin ? [...LINKS, { href: "/admin", label: "Administración" }] : LINKS;
   return (
     <nav aria-label="Principal" className="nav">
-      {links.map((l) => (
+      {LINKS.map((l) => (
         <Link key={l.href} href={l.href} aria-current={pathname.startsWith(l.href) ? "page" : undefined}>
           {l.label}
         </Link>
