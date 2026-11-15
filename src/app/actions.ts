@@ -51,6 +51,15 @@ export async function placeBid(_prev: ActionState, form: FormData): Promise<Acti
   return { ok: "Puja registrada." };
 }
 
+export async function payReleaseClause(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const price = Number(form.get("price"));
+  if (!Number.isSafeInteger(price) || price <= 0) return { error: "Cláusula no válida." };
+  const error = await callRpc("pay_release_clause", { p_player: String(form.get("player") ?? ""), p_price: price });
+  if (error) return { error };
+  revalidatePath("/", "layout");
+  return { ok: "Cláusula pagada. El jugador ya está en tu equipo." };
+}
+
 export async function closeMarket(): Promise<ActionState> {
   const error = await callRpc("admin_close_market", {});
   if (error) return { error };

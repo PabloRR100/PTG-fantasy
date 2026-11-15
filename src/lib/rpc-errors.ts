@@ -3,6 +3,10 @@ import { formatMoney } from "@/lib/format";
 const GENERIC = "No se pudo completar la acción. Inténtalo de nuevo.";
 
 const TRANSLATIONS: { pattern: RegExp; say: (m: RegExpMatchArray) => string }[] = [
+  { pattern: /^clause unavailable/, say: () => "Ese jugador ya no está disponible en ese equipo." },
+  { pattern: /^clause price changed/, say: () => "La cláusula ha cambiado. Actualiza la página para ver el precio." },
+  { pattern: /^clause insufficient budget/, say: () => "No tienes saldo suficiente para pagar la cláusula." },
+  { pattern: /^clause squad minimum/, say: () => "Ese equipo debe conservar al menos 2 jugadores de ese nivel." },
   { pattern: /^bid is below the market value \(minimum (\d+)\)/, say: (m) => `La puja está por debajo del valor de mercado: el mínimo es ${formatMoney(Number(m[1]))}.` },
   { pattern: /^bid is above your budget \((\d+)\)/, say: (m) => `La puja supera tu presupuesto (${formatMoney(Number(m[1]))}).` },
   { pattern: /^listing is not open/, say: () => "Esta subasta ya está cerrada." },

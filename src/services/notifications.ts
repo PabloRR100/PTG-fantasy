@@ -1,7 +1,7 @@
 import { extractEndpoint } from "@/lib/push-endpoint";
 import { formatMoney } from "@/lib/format";
 
-export type NotificationKind = "bid_won" | "bid_lost" | "market_open" | "jornada_closed";
+export type NotificationKind = "bid_won" | "bid_lost" | "market_open" | "jornada_closed" | "clause_taken";
 
 /** A row of `notification_outbox`: something that happened and who should hear about it. */
 export type OutboxRow = { id: number; user_id: string; kind: NotificationKind; data: Record<string, unknown> };
@@ -40,6 +40,12 @@ export function buildNotification(row: OutboxRow): Payload {
           ? `Hay ${count} ${count === 1 ? "jugador" : "jugadores"} en subasta.`
           : "Hay jugadores nuevos en subasta.";
       return { title: "Mercado abierto", body, url: "/mercado", tag: "padel-market-open" };
+    }
+    case "clause_taken": {
+      const buyer = text(row.data.buyer, "Un equipo");
+      const amount = row.data.amount;
+      const price = typeof amount === "number" && Number.isFinite(amount) ? ` por ${formatMoney(amount)}` : "";
+      return { title: "Te han pagado una cláusula", body: `${buyer} se ha llevado a ${player}${price}. El dinero ya está en tu presupuesto.`, url: "/equipo", tag: `padel-clause-${player}` };
     }
     case "jornada_closed": {
       const week = text(row.data.week_start, "");
