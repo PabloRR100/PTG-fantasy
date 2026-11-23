@@ -5,11 +5,16 @@
 //   --emit-payload=<file>               also save the players payload as JSON (to review it or load it by other means)
 //   --matches-only                      only the matches (the daily/weekly run); players and colors are left alone
 //   --allow-past-season                 accept rankings of a semester that is no longer running
+//   --ran-today                         print "yes" or "no": did a run go well today (Madrid)? Nothing is read or written
+//   --record-failure=<step> --reason=<text>   log a failed run (step: scrape | dry_run | write) and stop; --apply logs its own runs
+//   PTG_MACHINE=<name>                  how the log names this machine (default: the hostname)
 import { createClient } from "@supabase/supabase-js";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { hostname } from "node:os";
 import { parseMatchPage } from "../src/lib/ptg/parse-match";
 import { buildMatchPayload, ingestMatch, ingestPlayers } from "../src/services/ingest";
 import { planPlayers, summarizeChanges } from "../src/services/ingest-plan";
+import { INGEST_STEPS, ingestRanToday, recordIngestRun, type IngestStep } from "../src/services/ingest-runs";
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.includes(name);
@@ -17,6 +22,7 @@ const option = (name: string) => args.find((a) => a.startsWith(`${name}=`))?.sli
 const DIR = args.find((a) => !a.startsWith("--")) ?? "tmp/scrape";
 const APPLY = flag("--apply");
 const MATCHES_ONLY = flag("--matches-only");
+const MACHINE = process.env.PTG_MACHINE ?? hostname();
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -34,7 +40,31 @@ function printPlan(plan: ReturnType<typeof planPlayers>) {
   }
 }
 
+function serviceClient() {
+  return createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
+}
+
+/** The two commands that only touch the run log (the fallback machine and daily-sync.sh use them). Returns true when it handled one. */
+async function runLogCommand(): Promise<boolean> {
+  const rpc = (fn: string, a: Record<string, unknown>) => serviceClient().rpc(fn, a);
+  if (flag("--ran-today")) {
+    console.log((await ingestRanToday(rpc)) ? "yes" : "no");
+    return true;
+  }
+  const step = option("--record-failure");
+  if (step !== undefined) {
+    if (!INGEST_STEPS.includes(step as IngestStep)) throw new Error(`--record-failure=${step}: the step must be one of ${INGEST_STEPS.join(", ")}.`);
+    const error = option("--reason");
+    if (!error) throw new Error("--record-failure needs --reason=<what went wrong>.");
+    await recordIngestRun(rpc, { machine: MACHINE, status: "failed", step: step as IngestStep, error });
+    console.log(`logged a failed run at ${step}.`);
+    return true;
+  }
+  return false;
+}
+
 async function main() {
+  if (await runLogCommand()) return;
   if (!existsSync(DIR)) throw new Error(`${DIR} does not exist. Run scripts/scrape-ptg.sh first.`);
   const read = (name: string) => (existsSync(`${DIR}/${name}`) ? readFileSync(`${DIR}/${name}`, "utf8") : null);
   const plan = MATCHES_ONLY ? null : planPlayers(read, { allowPastSeason: flag("--allow-past-season") });
@@ -44,7 +74,7 @@ async function main() {
     if (emit) writeFileSync(emit, JSON.stringify(plan.payload));
   }
 
-  const supabase = createClient(requireEnv("NEXT_PUBLIC_SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
+  const supabase = serviceClient();
   if (plan) {
     const stored = await supabase.from("players").select("ptg_player_id, color, gender").limit(10000);
     if (stored.error) throw new Error(`reading current players: ${stored.error.message}`);
@@ -68,30 +98,39 @@ async function main() {
   }
   const rpc = (fn: string, args: Record<string, unknown>) => supabase.rpc(fn, args);
 
-  if (plan) {
-    // One call for every player, so a color change is applied at once and the lineups are repaired once, on the final colors.
-    const written = await ingestPlayers(rpc, plan.payload);
-    // Whoever is in no ranking of this semester is not part of the game: out of squads and the market, history kept.
-    const inactive = await rpc("deactivate_absent_players", { p_present: plan.presentIds });
-    if (inactive.error) throw new Error(`deactivate_absent_players: ${inactive.error.message}`);
-    console.log(`inactive: ${JSON.stringify(inactive.data)}`);
-    const repair = await rpc("repair_lineups", {});
-    console.log(`players: ${written} written. Lineups: ${JSON.stringify(repair.data)} (impossible = a squad with fewer than 2 players of some color)`);
-  }
-
   let inserted = 0;
   let skippedPlayers = 0;
-  for (const payload of finished) {
-    const result = await ingestMatch(rpc, payload);
-    inserted += result.inserted;
-    skippedPlayers += result.skipped;
+  try {
+    if (plan) {
+      // One call for every player, so a color change is applied at once and the lineups are repaired once, on the final colors.
+      const written = await ingestPlayers(rpc, plan.payload);
+      // Whoever is in no ranking of this semester is not part of the game: out of squads and the market, history kept.
+      const inactive = await rpc("deactivate_absent_players", { p_present: plan.presentIds });
+      if (inactive.error) throw new Error(`deactivate_absent_players: ${inactive.error.message}`);
+      console.log(`inactive: ${JSON.stringify(inactive.data)}`);
+      const repair = await rpc("repair_lineups", {});
+      console.log(`players: ${written} written. Lineups: ${JSON.stringify(repair.data)} (impossible = a squad with fewer than 2 players of some color)`);
+    }
+
+    for (const payload of finished) {
+      const result = await ingestMatch(rpc, payload);
+      inserted += result.inserted;
+      skippedPlayers += result.skipped;
+    }
+    const unfinished = files.length - finished.length;
+    // Once the results are in, tell the managers how a finished jornada ended (a week is announced once; nothing otherwise).
+    const announced = await rpc("announce_closed_jornadas", {});
+    if (announced.error) throw new Error(`announce_closed_jornadas: ${announced.error.message}`);
+    console.log(`jornada notifications queued: ${announced.data}`);
+    console.log(`matches: ${files.length - unfinished} ingested, ${unfinished} not finished; ${inserted} player results written, ${skippedPlayers} skipped (players not loaded into the game)`);
+  } catch (e) {
+    // A write that broke halfway is on the log too; the log must not hide the original error if it cannot be written.
+    const error = e instanceof Error ? e.message : String(e);
+    await recordIngestRun(rpc, { machine: MACHINE, status: "failed", step: "write", error }).catch((logError) => console.error(`could not log the failed run: ${logError.message}`));
+    throw e;
   }
-  const unfinished = files.length - finished.length;
-  // Once the results are in, tell the managers how a finished jornada ended (a week is announced once; nothing otherwise).
-  const announced = await rpc("announce_closed_jornadas", {});
-  if (announced.error) throw new Error(`announce_closed_jornadas: ${announced.error.message}`);
-  console.log(`jornada notifications queued: ${announced.data}`);
-  console.log(`matches: ${files.length - unfinished} ingested, ${unfinished} not finished; ${inserted} player results written, ${skippedPlayers} skipped (players not loaded into the game)`);
+  // Outside the try: if only the log fails, the data is written and the run must not be logged as a failed write.
+  await recordIngestRun(rpc, { machine: MACHINE, status: "ok", matches_seen: files.length, matches_finished: finished.length, results_written: inserted, players_skipped: skippedPlayers });
 }
 
 main().catch((e) => {
